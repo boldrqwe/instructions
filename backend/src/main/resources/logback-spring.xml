@@ -1,46 +1,40 @@
 <configuration>
-    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="instructions-backend"/>
-    <springProperty scope="context" name="logFormat" source="logging.format" defaultValue="text"/>
 
-    <property name="TEXT_PATTERN" value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} [%thread] %-5level %logger{36} - %msg%n"/>
+    <!-- DEV: читаемая консоль -->
+    <springProfile name="!prod">
+        <property name="PATTERN" value="%d{HH:mm:ss.SSS} %-5level %cyan([%thread]) %highlight(%-40.40logger{40}) : %msg%n"/>
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${PATTERN}</pattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
 
-    <appender name="TEXT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>${TEXT_PATTERN}</pattern>
-        </encoder>
-    </appender>
+        <!-- Повыше важные пакеты, пониже болтовня -->
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+        <logger name="org.hibernate.type.descriptor.sql" level="WARN"/>
+    </springProfile>
 
-    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
-            <providers>
-                <timestamp>
-                    <fieldName>timestamp</fieldName>
-                </timestamp>
-                <pattern>
-                    <pattern>
-                        {
-                        "level": "%level",
-                        "logger": "%logger{36}",
-                        "thread": "%thread",
-                        "message": "%message",
-                        "application": "${appName}"
-                        }
-                    </pattern>
-                </pattern>
-            </providers>
-        </encoder>
-    </appender>
+    <!-- PROD: структурные JSON-логи -->
+    <springProfile name="prod">
+        <appender name="FILE_JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>logs/app.json</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>logs/app.%d{yyyy-MM-dd}.json.gz</fileNamePattern>
+                <maxHistory>30</maxHistory>
+            </rollingPolicy>
+            <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+                <providers>
+                    <timestamp/><logLevel/><threadName/><loggerName/><message/><stackTrace/><mdc/><context/><arguments/>
+                </providers>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="FILE_JSON"/>
+        </root>
+    </springProfile>
 
-    <if condition='property("logFormat").equalsIgnoreCase("json")'>
-        <then>
-            <root level="INFO">
-                <appender-ref ref="JSON"/>
-            </root>
-        </then>
-        <else>
-            <root level="INFO">
-                <appender-ref ref="TEXT"/>
-            </root>
-        </else>
-    </if>
 </configuration>
