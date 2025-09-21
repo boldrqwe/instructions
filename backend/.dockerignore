@@ -1,6 +1,12 @@
-target
-.mvn
-.git
+# игнорим всё по умолчанию
+**
+
+# но оставляем то, что нужно для сборки
+!Dockerfile
+!pom.xml
+!src/**
+
+# остальное явно не нужно
+.git/
 .gitignore
-.idea
-*.iml
+target/
