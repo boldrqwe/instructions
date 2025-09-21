@@ -22,7 +22,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # JDK 25 с jdk.java.net (стабильно и без "SemVer '25' not found")
+      # JDK 25, как у тебя было
       - name: Set up JDK 25 (jdk.java.net)
         uses: oracle-actions/setup-java@v1
         with:
@@ -30,7 +30,6 @@ jobs:
           release: 25
           cache: maven
 
-      # На всякий случай прибиваем Maven к этому JAVA_HOME
       - name: Configure Maven toolchains (force JDK 25)
         run: |
           mkdir -p ~/.m2
@@ -50,13 +49,11 @@ jobs:
           java -version
           mvn -v
 
-      # Если у тебя есть test-профиль (H2/без Liquibase) — он активируется.
-      # Если нет — параметр не помешает.
+      # Локально прогоняем тесты (артефакт jar нам не нужен вне Docker'a)
       - name: Build and test with Maven
         working-directory: backend
         run: mvn -B -Dspring.profiles.active=test verify
 
-      # На случай падения — прикладываем отчёты
       - name: Upload surefire reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -73,7 +70,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Buildx обязателен для cache-to: type=gha
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -92,6 +88,8 @@ jobs:
           flavor: |
             latest=true
 
+      # ВАЖНО: теперь Dockerfile сам собирает jar (мультистейдж),
+      # так что никакого COPY target/*.jar из внешнего контекста
       - name: Build and push backend image
         if: github.event_name == 'push'
         uses: docker/build-push-action@v5
