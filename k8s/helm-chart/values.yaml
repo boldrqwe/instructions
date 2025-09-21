@@ -1,0 +1,43 @@
+# Базовые значения по умолчанию. Env-специфичные — в env-repo (values-*.yaml)
+image:
+  repository: ghcr.io/YOUR_ORG_OR_USER/my-service     # заменить
+  tag: "dev"                                          # CI будет обновлять на SHA
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+serviceAccount:
+  create: false
+  name: default
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "1"
+    memory: "512Mi"
+
+env:
+  SPRING_PROFILES_ACTIVE: dev
+  KAFKA_BOOTSTRAP: my-cluster-kafka-bootstrap.kafka.svc:9092
+
+ingress:
+  enabled: true
+  className: "nginx"
+  host: "my-service.example.com"
+  tls:
+    enabled: true
+    issuer: "letsencrypt"
+
+# HPA параметры (можно переопределять в env-repo)
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  cpuAverageUtilization: 70

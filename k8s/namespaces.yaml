@@ -1,0 +1,15 @@
+# k8s/namespaces.yaml
+apiVersion: v1                           # API версии для core-объектов: https://k8s.io/docs/reference/generated/kubernetes-api/v1.30/#-strong-core-v1-strong-
+kind: Namespace                          # Namespace объект: https://k8s.io/docs/concepts/overview/working-with-objects/namespaces/
+metadata:                                # Метаданные любого объекта: https://k8s.io/docs/concepts/overview/working-with-objects/kubernetes-objects/#required-fields
+  name: apps                             # Имя ns (в нём живут наши приложения)
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka                            # Отдельный ns для Kafka/Strimzi (stateful)
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability                    # Мониторинг/логи (Prometheus/Grafana/Loki)

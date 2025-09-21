@@ -1,0 +1,29 @@
+# k8s/rbac-deployer.yaml
+apiVersion: v1                           # ServiceAccount API: https://k8s.io/docs/tasks/configure-pod-container/configure-service-account/
+kind: ServiceAccount
+metadata:
+  name: ci-deployer
+  namespace: apps
+---
+apiVersion: rbac.authorization.k8s.io/v1 # RBAC API: https://k8s.io/docs/reference/access-authn-authz/rbac/
+kind: Role
+metadata:
+  name: ci-deployer-role
+  namespace: apps
+rules:                                    # Список правил RBAC
+  - apiGroups: ["", "apps", "batch", "networking.k8s.io"] # Группы API
+    resources: ["deployments","statefulsets","services","configmaps","secrets","ingresses","jobs"] # Ресурсы
+    verbs: ["get","list","create","update","patch","delete","watch"] # Действия
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deployer-binding
+  namespace: apps
+subjects:                                 # Кому привязываем роль: https://k8s.io/docs/reference/access-authn-authz/rbac/#rolebinding-and-clusterrolebinding
+  - kind: ServiceAccount
+    name: ci-deployer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ci-deployer-role
