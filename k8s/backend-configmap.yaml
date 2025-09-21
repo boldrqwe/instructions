@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: instructions-backend-config
+  labels:
+    app: instructions-backend
+    tier: backend
+    component: api
+    part-of: instructions-platform
+    managed-by: kubernetes
+  annotations:
+    description: Configuration for the instructions backend service
+    logging.boldin.dev/format: text
+    monitoring.boldin.dev/scrape: "true"
+    monitoring.boldin.dev/port: "8080"
+    monitoring.boldin.dev/path: /actuator/prometheus
+data:
+  SPRING_PROFILES_ACTIVE: k8s
+  LOGGING_LEVEL_COM_BOLDIN_INSTRUCTIONS: INFO
+  SERVER_PORT: "8080"
+  INSTRUCTIONS_DB_HOST: postgres
+  INSTRUCTIONS_DB_PORT: "5432"
+  INSTRUCTIONS_DB_NAME: instructions
+  INSTRUCTIONS_DB_USER: instructions
