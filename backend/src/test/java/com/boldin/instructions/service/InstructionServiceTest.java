@@ -23,6 +23,7 @@ class InstructionServiceTest {
 
     @BeforeEach
     void setUp() {
+        repository.deleteAll();
         service = new InstructionService(repository);
     }
 

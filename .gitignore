@@ -6,6 +6,10 @@ __pycache__/
 .venv/
 venv/
 
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+
 # Generated Kubernetes manifests
 k8s/deployment.yaml
 k8s/service.yaml

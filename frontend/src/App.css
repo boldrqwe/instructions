@@ -1,0 +1,107 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 35%, #0f172a 100%);
+  color: #f8fafc;
+}
+
+.hero {
+  padding: 3rem 1.5rem 2rem;
+  text-align: center;
+}
+
+.hero__inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.hero h1 {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.hero p {
+  margin: 0.25rem 0;
+  font-size: 1.1rem;
+  color: #cbd5f5;
+}
+
+.hero__hint code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  padding: 0.2rem 0.4rem;
+  background-color: rgba(148, 163, 184, 0.2);
+  border-radius: 0.4rem;
+  color: #f8fafc;
+}
+
+.content {
+  flex: 1;
+  padding: 0 1.5rem 3rem;
+}
+
+.state {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  background: rgba(148, 163, 184, 0.15);
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.state--error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fecaca;
+}
+
+.instructions {
+  list-style: none;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.instructions__item {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.45);
+}
+
+.instructions__item h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.instructions__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.95rem;
+  color: #cbd5f5;
+  margin-bottom: 1rem;
+}
+
+.instructions__content p {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+  color: #e2e8f0;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 2.5rem 1rem 1.5rem;
+  }
+
+  .hero h1 {
+    font-size: 2.2rem;
+  }
+
+  .instructions__item {
+    padding: 1.5rem;
+  }
+}

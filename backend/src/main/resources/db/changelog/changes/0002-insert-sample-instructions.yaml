@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0002-insert-sample-instructions
+      author: instructions
+      changes:
+        - insert:
+            tableName: instructions
+            columns:
+              - column:
+                  name: id
+                  value: 3a8c2ac9-d070-4cf3-98ba-9ed71bb7087d
+              - column:
+                  name: title
+                  value: "Как запустить backend"
+              - column:
+                  name: content
+                  value: |
+                    1. Убедитесь, что установлен Java 21 или новее.
+                    2. Выполните `mvn spring-boot:run` из директории backend.
+                    3. Откройте http://localhost:8080/actuator/health чтобы проверить статус службы.
+              - column:
+                  name: created_at
+                  valueDate: 2024-07-01T09:00:00
+              - column:
+                  name: updated_at
+                  valueDate: 2024-07-01T09:00:00
+        - insert:
+            tableName: instructions
+            columns:
+              - column:
+                  name: id
+                  value: b1cf0c28-2b88-4d62-b920-cb876a4d6c58
+              - column:
+                  name: title
+                  value: "Как подготовить фронтенд"
+              - column:
+                  name: content
+                  value: |
+                    1. Установите зависимости командой `npm install` в каталоге frontend.
+                    2. Запустите `npm run dev` и откройте http://localhost:5173.
+                    3. Убедитесь, что данные подгружаются с backend по адресу /api/instructions.
+              - column:
+                  name: created_at
+                  valueDate: 2024-07-01T10:00:00
+              - column:
+                  name: updated_at
+                  valueDate: 2024-07-01T10:00:00
