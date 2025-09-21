@@ -24,12 +24,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
+      - name: Set up JDK 25 (jdk.java.net)
+        uses: oracle-actions/setup-java@v1
         with:
-          distribution: temurin
-          java-version: '25'
-          cache: maven
+          website: jdk.java.net
+          release: 25
+          cache: 'maven'
+
 
       # 3) На всякий случай "пришиваем" toolchains под текущий JAVA_HOME,
       # чтобы Maven всегда компилировал именно JDK 25
