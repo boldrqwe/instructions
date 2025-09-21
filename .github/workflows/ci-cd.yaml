@@ -10,8 +10,8 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  K8S_NAMESPACE: boldin
-  DEPLOYMENT_NAME: boldin-web
+  K8S_NAMESPACE: apps
+  DEPLOYMENT_NAME: my-service
 
 jobs:
   build-and-test:
@@ -20,18 +20,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up JDK
+        uses: actions/setup-java@v4
         with:
-          python-version: '3.11'
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run tests
-        run: pytest
+      - name: Build and test with Maven
+        working-directory: backend
+        run: mvn -B verify
 
       - name: Log in to GHCR
         if: github.event_name == 'push'
@@ -47,12 +45,18 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ github.sha }}
+            type=ref,event=branch
+          flavor: |
+            latest=true
 
       - name: Build and push Docker image
         if: github.event_name == 'push'
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: backend
+          file: backend/Dockerfile
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
