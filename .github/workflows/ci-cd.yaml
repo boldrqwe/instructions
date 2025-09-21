@@ -2,14 +2,18 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - work
+    branches: [ main, work ]
   pull_request:
+
+# 1) Даем право пушить в GHCR
+permissions:
+  contents: read
+  packages: write
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # 2) Явно задаем lowercase target для backend-образа
+  IMAGE_BACKEND: ghcr.io/${{ github.repository_owner }}/instructions-backend
   K8S_NAMESPACE: apps
   DEPLOYMENT_NAME: my-service
 
@@ -23,19 +27,39 @@ jobs:
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '25'
-          cache: 'maven'
+          cache: maven
+
+      # 3) На всякий случай "пришиваем" toolchains под текущий JAVA_HOME,
+      # чтобы Maven всегда компилировал именно JDK 25
+      - name: Configure Maven toolchains (force JDK 25)
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/toolchains.xml << 'EOF'
+          <toolchains>
+            <toolchain>
+              <type>jdk</type>
+              <provides>
+                <version>25</version>
+                <vendor>any</vendor>
+              </provides>
+              <configuration>
+                <jdkHome>${JAVA_HOME}</jdkHome>
+              </configuration>
+            </toolchain>
+          </toolchains>
+          EOF
 
       - name: Show Java/Maven
         run: |
+          echo "JAVA_HOME=$JAVA_HOME"
           java -version
           mvn -v
 
       - name: Build and test with Maven
         working-directory: backend
         run: mvn -B verify
-
 
       - name: Log in to GHCR
         if: github.event_name == 'push'
@@ -45,19 +69,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
+      # 4) Генерим теги для backend-образа (latest + sha + branch)
+      - name: Extract Docker metadata (backend)
         id: meta
         if: github.event_name == 'push'
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE_BACKEND }}
           tags: |
             type=raw,value=${{ github.sha }}
             type=ref,event=branch
           flavor: |
             latest=true
 
-      - name: Build and push Docker image
+      - name: Build and push backend image
         if: github.event_name == 'push'
         uses: docker/build-push-action@v5
         with:
@@ -91,14 +116,19 @@ jobs:
         with:
           version: 'v1.29.2'
 
+      # 5) Отдаем в шаблоны точный тег образа (по SHA)
       - name: Render Kubernetes manifests
         env:
-          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          IMAGE: ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
         run: |
           envsubst < k8s/deployment.yaml.tpl > k8s/deployment.yaml
           envsubst < k8s/service.yaml.tpl > k8s/service.yaml
+          echo "::group::Rendered deployment"
           cat k8s/deployment.yaml
+          echo "::endgroup::"
+          echo "::group::Rendered service"
           cat k8s/service.yaml
+          echo "::endgroup::"
 
       - name: Create namespace if missing
         run: |
