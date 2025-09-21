@@ -20,16 +20,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '25'
           cache: 'maven'
+
+      - name: Show Java/Maven
+        run: |
+          java -version
+          mvn -v
 
       - name: Build and test with Maven
         working-directory: backend
         run: mvn -B verify
+
 
       - name: Log in to GHCR
         if: github.event_name == 'push'
