@@ -5,14 +5,12 @@ on:
     branches: [ main, work ]
   pull_request:
 
-# 1) Даем право пушить в GHCR
 permissions:
   contents: read
   packages: write
 
 env:
   REGISTRY: ghcr.io
-  # 2) Явно задаем lowercase target для backend-образа
   IMAGE_BACKEND: ghcr.io/${{ github.repository_owner }}/instructions-backend
   K8S_NAMESPACE: apps
   DEPLOYMENT_NAME: my-service
@@ -24,16 +22,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # JDK 25 с jdk.java.net (стабильно и без "SemVer '25' not found")
       - name: Set up JDK 25 (jdk.java.net)
         uses: oracle-actions/setup-java@v1
         with:
           website: jdk.java.net
           release: 25
-          cache: 'maven'
+          cache: maven
 
-
-      # 3) На всякий случай "пришиваем" toolchains под текущий JAVA_HOME,
-      # чтобы Maven всегда компилировал именно JDK 25
+      # На всякий случай прибиваем Maven к этому JAVA_HOME
       - name: Configure Maven toolchains (force JDK 25)
         run: |
           mkdir -p ~/.m2
@@ -41,13 +38,8 @@ jobs:
           <toolchains>
             <toolchain>
               <type>jdk</type>
-              <provides>
-                <version>25</version>
-                <vendor>any</vendor>
-              </provides>
-              <configuration>
-                <jdkHome>${JAVA_HOME}</jdkHome>
-              </configuration>
+              <provides><version>25</version><vendor>any</vendor></provides>
+              <configuration><jdkHome>${JAVA_HOME}</jdkHome></configuration>
             </toolchain>
           </toolchains>
           EOF
@@ -58,9 +50,20 @@ jobs:
           java -version
           mvn -v
 
+      # Если у тебя есть test-профиль (H2/без Liquibase) — он активируется.
+      # Если нет — параметр не помешает.
       - name: Build and test with Maven
         working-directory: backend
-        run: mvn -B verify
+        run: mvn -B -Dspring.profiles.active=test verify
+
+      # На случай падения — прикладываем отчёты
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: backend/target/surefire-reports
+          if-no-files-found: ignore
 
       - name: Log in to GHCR
         if: github.event_name == 'push'
@@ -70,7 +73,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 4) Генерим теги для backend-образа (latest + sha + branch)
+      # Buildx обязателен для cache-to: type=gha
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+          driver: docker-container
+
       - name: Extract Docker metadata (backend)
         id: meta
         if: github.event_name == 'push'
@@ -117,19 +126,14 @@ jobs:
         with:
           version: 'v1.29.2'
 
-      # 5) Отдаем в шаблоны точный тег образа (по SHA)
       - name: Render Kubernetes manifests
         env:
           IMAGE: ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
         run: |
           envsubst < k8s/deployment.yaml.tpl > k8s/deployment.yaml
           envsubst < k8s/service.yaml.tpl > k8s/service.yaml
-          echo "::group::Rendered deployment"
-          cat k8s/deployment.yaml
-          echo "::endgroup::"
-          echo "::group::Rendered service"
-          cat k8s/service.yaml
-          echo "::endgroup::"
+          echo "::group::Rendered deployment"; cat k8s/deployment.yaml; echo "::endgroup::"
+          echo "::group::Rendered service"; cat k8s/service.yaml; echo "::endgroup::"
 
       - name: Create namespace if missing
         run: |
