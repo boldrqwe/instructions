@@ -3,33 +3,22 @@ services:
     image: postgres:17
     restart: unless-stopped
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"     # с хоста подключаемся на 5433
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-instructions}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-instr_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-instr_pass}
       TZ: "UTC"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-instructions} || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-instr_user} -d ${POSTGRES_DB:-instructions} || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/init:/docker-entrypoint-initdb.d:ro   # опционально: .sql/.sh скрипты инициализации
     shm_size: 256m
-
-  adminer:
-    image: adminer:latest
-    restart: unless-stopped
-    ports:
-      - "8081:8080"
-    environment:
-      ADMINER_DEFAULT_SERVER: db
-    depends_on:
-      db:
-        condition: service_healthy
 
   frontend:
     image: node:20-alpine
@@ -38,7 +27,8 @@ services:
     command: >
       sh -c "npm install && npm run dev -- --host 0.0.0.0 --port ${FRONTEND_PORT:-5173}"
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://host.docker.internal:8080}
+      # бэкенд у тебя локально в IDE на 8080
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
       CHOKIDAR_USEPOLLING: "true"
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
@@ -49,7 +39,7 @@ services:
       db:
         condition: service_healthy
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "host.docker.internal:host-gateway"  # пригодится, если что-то нужно с хоста
 
 volumes:
   pgdata:

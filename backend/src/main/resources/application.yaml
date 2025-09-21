@@ -6,9 +6,10 @@ spring:
     name: instructions-backend
   datasource:
     url: jdbc:postgresql://localhost:5433/instructions
-    username: instr_user
-    password: instr_pass
-    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres
+
+
   jpa:
     hibernate:
       ddl-auto: none
