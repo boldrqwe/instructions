@@ -1,0 +1,46 @@
+name: deploy
+on:
+  push:
+    branches: [ "main" ]
+permissions:
+  contents: read
+  packages: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build & Push image
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}/app:$(git rev-parse --short HEAD)"
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Render manifests
+        run: |
+          sudo apt-get update -y >/dev/null 2>&1 || true
+          sudo apt-get install -y gettext-base >/dev/null 2>&1 || true
+          mkdir -p rendered
+          export IMAGE="${IMAGE}"
+          for f in k8s/*.yaml; do
+            envsubst < "$f" > "rendered/$(basename "$f")"
+          done
+
+      - name: Apply manifests
+        run: |
+          kubectl -n prod-app apply -f rendered/
+
+      - name: Wait for rollout
+        run: |
+          kubectl -n prod-app rollout status deploy/my-deployment --timeout=180s
