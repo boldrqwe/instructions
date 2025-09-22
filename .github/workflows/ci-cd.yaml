@@ -158,11 +158,27 @@ jobs:
       # Применяем
       - name: Apply manifests
         run: |
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/configmap.yaml
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/secret.yaml
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/logback-configmap.yaml
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/postgres.yaml
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/frontend-configmap.yaml
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/frontend.yaml
           kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/deployment.yaml
           kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/service.yaml
 
       # Ждём rollout
       - name: Wait for rollout
         run: |
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" rollout status "deployment/${{ env.DEPLOYMENT_NAME }}"
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" rollout status "deployment/${{ env.DEPLOYMENT_NAME }}" --timeout=120s
+
+      - name: Smoke test backend health endpoint
+        run: |
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" run curl-smoke --rm --restart=Never --image=curlimages/curl --command -- \
+            sh -c 'curl -sS http://my-service:8080/actuator/health | grep "\"status\":\"UP\""'
+
+      - name: Smoke test frontend placeholder
+        run: |
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" run curl-frontend --rm --restart=Never --image=curlimages/curl --command -- \
+            sh -c 'curl -sS -o /dev/null -w "%{http_code}" http://frontend:80 | grep 200'
  

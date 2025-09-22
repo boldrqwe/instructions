@@ -1,10 +1,10 @@
-# k8s/configmap.yaml
-apiVersion: v1                           # ConfigMap: https://k8s.io/docs/concepts/configuration/configmap/
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: my-service-config
   namespace: apps
-data:                                     # key/value строки
-  SPRING_PROFILES_ACTIVE: dev
-  KAFKA_BOOTSTRAP: my-cluster-kafka-bootstrap.kafka.svc:9092
-  FEATURE_SOME_SWITCH: "true"
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  SERVER_PORT: "8080"
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
