@@ -108,7 +108,7 @@ jobs:
           chmod 600 "$HOME/.kube/config"
           echo "KUBECONFIG_PATH=$HOME/.kube/config" >> "$GITHUB_ENV"
 
-      - name: Preflight: (optional) override API server and ping
+      - name: "Preflight: (optional) override API server and ping"
         id: preflight
         env:
           KUBECONFIG_PATH: ${{ env.KUBECONFIG_PATH }}
