@@ -14,15 +14,7 @@ public class DataInitializer {
 
 
     @Bean
-    CommandLineRunner seedInstructions(InstructionService service) {
-        return args -> {
-            if (service.findAll().isEmpty()) {
-                log.info("Seeding initial instructions");
-                service.create("Как запустить сервис", "Подключитесь к API и выполните запросы для управления инструкциями.");
-                service.create("Проверка состояния", "Вызовите /actuator/health чтобы убедиться, что сервис жив.");
-            } else {
-                log.info("Instructions already present, skipping seed");
-            }
-        };
+    CommandLineRunner logInstructionCount(InstructionService service) {
+        return args -> log.info("Application started with {} instruction(s) in storage", service.findAll().size());
     }
 }
