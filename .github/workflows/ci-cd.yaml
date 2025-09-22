@@ -158,24 +158,58 @@ jobs:
       # Применяем
       - name: Apply manifests
         run: |
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/configmap.yaml
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/secret.yaml
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/logback-configmap.yaml
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/postgres.yaml
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/frontend-configmap.yaml
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/frontend.yaml
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/deployment.yaml
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/service.yaml
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/secret.yaml
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/configmap.yaml
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/postgres.yaml
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/logback-configmap.yaml
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/deployment.yaml
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/service.yaml
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/frontend-configmap.yaml
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/frontend.yaml
 
-      # Ждём rollout
-      - name: Wait for rollout
+      - name: Wait for Postgres readiness
         run: |
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" rollout status "deployment/${{ env.DEPLOYMENT_NAME }}" --timeout=120s
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" rollout status statefulset/postgres --timeout=180s
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" wait --for=condition=ready pod -l app=postgres --timeout=180s
+
+      - name: Wait for backend rollout
+        run: |
+          set +e
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" rollout status "deployment/${DEPLOYMENT_NAME}" --timeout=300s
+          rc=$?
+          if [ $rc -ne 0 ]; then
+            echo "::group::Diagnostics: deployments/rs/pods"
+            kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" get deploy,rs,pods -o wide
+            echo "::endgroup::"
+
+            echo "::group::Diagnostics: describe deployment"
+            kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" describe deploy "${DEPLOYMENT_NAME}"
+            echo "::endgroup::"
+
+            echo "::group::Diagnostics: recent events"
+            kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" get events --sort-by=.lastTimestamp | tail -n 100
+            echo "::endgroup::"
+
+            echo "::group::Diagnostics: pod logs (current/previous)"
+            POD=$(kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" get pods -l app=${DEPLOYMENT_NAME} -o jsonpath='{.items[0].metadata.name}')
+            if [ -n "$POD" ]; then
+              kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" logs "$POD" --tail=200 || true
+              kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" logs "$POD" --previous --tail=200 || true
+            else
+              echo "No ${DEPLOYMENT_NAME} pods found for log collection"
+            fi
+            echo "::endgroup::"
+
+            exit 1
+          fi
+          set -e
 
       - name: Smoke test backend health endpoint
         run: |
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" run curl-smoke --rm --restart=Never --image=curlimages/curl --command -- \
-            sh -c 'curl -sS http://my-service:8080/actuator/health | grep "\"status\":\"UP\""'
+          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" run "curl-smoke-${GITHUB_RUN_NUMBER}" \
+            --image=curlimages/curl --restart=Never --attach --rm --quiet -- \
+            -sS http://my-service:8080/actuator/health | tee /tmp/health.json
+          grep -q '"status":"UP"' /tmp/health.json
 
       - name: Smoke test frontend placeholder
         run: |
