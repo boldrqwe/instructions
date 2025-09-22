@@ -4,20 +4,23 @@ databaseChangeLog:
       author: instructions
       changes:
         - insert:
-            tableName: instructions
+            tableName: instruction_categories
             columns:
               - column:
                   name: id
-                  value: 3a8c2ac9-d070-4cf3-98ba-9ed71bb7087d
+                  value: 0b4cf1ad-67cd-4a9e-9d2c-4aa9367d3c04
+              - column:
+                  name: slug
+                  value: frontend-fundamentals
               - column:
                   name: title
-                  value: "Как запустить backend"
+                  value: «Frontend Fundamentals»
               - column:
-                  name: content
-                  value: |
-                    1. Убедитесь, что установлен Java 21 или новее.
-                    2. Выполните `mvn spring-boot:run` из директории backend.
-                    3. Откройте http://localhost:8080/actuator/health чтобы проверить статус службы.
+                  name: description
+                  value: Каркас и визуальные паттерны для современных клиентских приложений.
+              - column:
+                  name: icon
+                  value: "🧱"
               - column:
                   name: created_at
                   valueDate: 2024-07-01T09:00:00
@@ -25,23 +28,830 @@ databaseChangeLog:
                   name: updated_at
                   valueDate: 2024-07-01T09:00:00
         - insert:
+            tableName: instruction_categories
+            columns:
+              - column:
+                  name: id
+                  value: 1f4d5f8a-73f2-4f7b-8a2b-7775bdc5e210
+              - column:
+                  name: slug
+                  value: backend-foundations
+              - column:
+                  name: title
+                  value: «Backend Foundations»
+              - column:
+                  name: description
+                  value: Надёжные REST-службы, хранение данных и инфраструктурные паттерны.
+              - column:
+                  name: icon
+                  value: "🧩"
+              - column:
+                  name: created_at
+                  valueDate: 2024-07-01T09:05:00
+              - column:
+                  name: updated_at
+                  valueDate: 2024-07-01T09:05:00
+        - insert:
+            tableName: instruction_categories
+            columns:
+              - column:
+                  name: id
+                  value: 2d792744-2b8f-4bc1-9b59-b77b7feb0b21
+              - column:
+                  name: slug
+                  value: devops-automation
+              - column:
+                  name: title
+                  value: «DevOps Automation»
+              - column:
+                  name: description
+                  value: Автоматизация окружений и инструменты доставки без ручной рутины.
+              - column:
+                  name: icon
+                  value: "⚙️"
+              - column:
+                  name: created_at
+                  valueDate: 2024-07-01T09:10:00
+              - column:
+                  name: updated_at
+                  valueDate: 2024-07-01T09:10:00
+        - insert:
             tableName: instructions
             columns:
               - column:
                   name: id
-                  value: b1cf0c28-2b88-4d62-b920-cb876a4d6c58
+                  value: 5aa9e9f5-4b5f-4a9d-88c4-7f1c5b77b0e2
+              - column:
+                  name: category_id
+                  value: 0b4cf1ad-67cd-4a9e-9d2c-4aa9367d3c04
+              - column:
+                  name: slug
+                  value: html-building-blocks
               - column:
                   name: title
-                  value: "Как подготовить фронтенд"
+                  value: Быстрый старт по HTML
               - column:
-                  name: content
+                  name: summary
+                  value: Собираем понятный HTML-каркас с семантикой и контрольным чек-листом качества.
+              - column:
+                  name: introduction
                   value: |
-                    1. Установите зависимости командой `npm install` в каталоге frontend.
-                    2. Запустите `npm run dev` и откройте http://localhost:5173.
-                    3. Убедитесь, что данные подгружаются с backend по адресу /api/instructions.
+                    В этом руководстве мы собрали ключевые элементы, которые помогают быстро сверстать понятную HTML-страницу.
+                    Вы узнаете, из чего состоит каркас документа, как выбрать семантические теги и где проверять результат.
+              - column:
+                  name: difficulty
+                  value: BEGINNER
+              - column:
+                  name: estimated_minutes
+                  valueNumeric: 30
+              - column:
+                  name: prerequisites
+                  value: Базовое представление о структуре веб-страниц и понимание того, что такое HTML-теги.
               - column:
                   name: created_at
                   valueDate: 2024-07-01T10:00:00
               - column:
                   name: updated_at
                   valueDate: 2024-07-01T10:00:00
+        - insert:
+            tableName: instructions
+            columns:
+              - column:
+                  name: id
+                  value: 932cf0a1-b4c3-4ff0-9572-7c9f6f0c06b8
+              - column:
+                  name: category_id
+                  value: 1f4d5f8a-73f2-4f7b-8a2b-7775bdc5e210
+              - column:
+                  name: slug
+                  value: spring-boot-rest-blueprint
+              - column:
+                  name: title
+                  value: Шаблон REST-сервиса на Spring Boot
+              - column:
+                  name: summary
+                  value: Формируем слой сервиса, валидацию и тесты, чтобы быстрее запускать новые REST-проекты.
+              - column:
+                  name: introduction
+                  value: |
+                    Рецепт помогает за 45 минут подготовить рабочий каркас REST API: генерацию проекта, стандартные зависимости,
+                    контроллеры и проверку качества. Используйте его как стартовую точку для производственных сервисов.
+              - column:
+                  name: difficulty
+                  value: INTERMEDIATE
+              - column:
+                  name: estimated_minutes
+                  valueNumeric: 45
+              - column:
+                  name: prerequisites
+                  value: Java 21+, базовое знание Spring Boot и Gradle/Maven.
+              - column:
+                  name: created_at
+                  valueDate: 2024-07-01T11:15:00
+              - column:
+                  name: updated_at
+                  valueDate: 2024-07-01T11:15:00
+        - insert:
+            tableName: instructions
+            columns:
+              - column:
+                  name: id
+                  value: a7e5aee1-4d72-4a48-bd4d-0f8f62b4f889
+              - column:
+                  name: category_id
+                  value: 2d792744-2b8f-4bc1-9b59-b77b7feb0b21
+              - column:
+                  name: slug
+                  value: dockerized-local-environment
+              - column:
+                  name: title
+                  value: Docker-окружение для разработки
+              - column:
+                  name: summary
+                  value: Поднимаем локальную инфраструктуру проекта через Docker Compose и встроенные проверки.
+              - column:
+                  name: introduction
+                  value: |
+                    Гайд показывает, как за вечер перевести локальный стек в Docker: описать контейнеры, настроить тома и
+                    автоматические проверки доступности. Такой подход сокращает время на onboarding и помогает уравнять окружения.
+              - column:
+                  name: difficulty
+                  value: INTERMEDIATE
+              - column:
+                  name: estimated_minutes
+                  valueNumeric: 35
+              - column:
+                  name: prerequisites
+                  value: Установленные Docker Engine и Docker Compose, базовые знания командной строки.
+              - column:
+                  name: created_at
+                  valueDate: 2024-07-01T12:00:00
+              - column:
+                  name: updated_at
+                  valueDate: 2024-07-01T12:00:00
+        - insert:
+            tableName: instruction_tags
+            columns:
+              - column:
+                  name: instruction_id
+                  value: 5aa9e9f5-4b5f-4a9d-88c4-7f1c5b77b0e2
+              - column:
+                  name: tag_order
+                  valueNumeric: 0
+              - column:
+                  name: tag
+                  value: HTML
+        - insert:
+            tableName: instruction_tags
+            columns:
+              - column:
+                  name: instruction_id
+                  value: 5aa9e9f5-4b5f-4a9d-88c4-7f1c5b77b0e2
+              - column:
+                  name: tag_order
+                  valueNumeric: 1
+              - column:
+                  name: tag
+                  value: Frontend
+        - insert:
+            tableName: instruction_tags
+            columns:
+              - column:
+                  name: instruction_id
+                  value: 5aa9e9f5-4b5f-4a9d-88c4-7f1c5b77b0e2
+              - column:
+                  name: tag_order
+                  valueNumeric: 2
+              - column:
+                  name: tag
+                  value: Semantic
+        - insert:
+            tableName: instruction_tags
+            columns:
+              - column:
+                  name: instruction_id
+                  value: 932cf0a1-b4c3-4ff0-9572-7c9f6f0c06b8
+              - column:
+                  name: tag_order
+                  valueNumeric: 0
+              - column:
+                  name: tag
+                  value: Spring Boot
+        - insert:
+            tableName: instruction_tags
+            columns:
+              - column:
+                  name: instruction_id
+                  value: 932cf0a1-b4c3-4ff0-9572-7c9f6f0c06b8
+              - column:
+                  name: tag_order
+                  valueNumeric: 1
+              - column:
+                  name: tag
+                  value: REST
+        - insert:
+            tableName: instruction_tags
+            columns:
+              - column:
+                  name: instruction_id
+                  value: 932cf0a1-b4c3-4ff0-9572-7c9f6f0c06b8
+              - column:
+                  name: tag_order
+                  valueNumeric: 2
+              - column:
+                  name: tag
+                  value: Java
+        - insert:
+            tableName: instruction_tags
+            columns:
+              - column:
+                  name: instruction_id
+                  value: a7e5aee1-4d72-4a48-bd4d-0f8f62b4f889
+              - column:
+                  name: tag_order
+                  valueNumeric: 0
+              - column:
+                  name: tag
+                  value: Docker
+        - insert:
+            tableName: instruction_tags
+            columns:
+              - column:
+                  name: instruction_id
+                  value: a7e5aee1-4d72-4a48-bd4d-0f8f62b4f889
+              - column:
+                  name: tag_order
+                  valueNumeric: 1
+              - column:
+                  name: tag
+                  value: Compose
+        - insert:
+            tableName: instruction_tags
+            columns:
+              - column:
+                  name: instruction_id
+                  value: a7e5aee1-4d72-4a48-bd4d-0f8f62b4f889
+              - column:
+                  name: tag_order
+                  valueNumeric: 2
+              - column:
+                  name: tag
+                  value: DevOps
+        - insert:
+            tableName: instruction_sections
+            columns:
+              - column:
+                  name: id
+                  value: 0f9bde4e-43dd-4e35-8ad6-a8ebb3d2f6df
+              - column:
+                  name: instruction_id
+                  value: 5aa9e9f5-4b5f-4a9d-88c4-7f1c5b77b0e2
+              - column:
+                  name: position
+                  valueNumeric: 1
+              - column:
+                  name: title
+                  value: Создаём каркас документа
+              - column:
+                  name: content
+                  value: |
+                    Используйте <!DOCTYPE html>, <html lang="ru"> и базовые теги <head>/<body>, чтобы браузер корректно интерпретировал страницу.
+                    Добавьте метатеги viewport и charset, подключите фавикон и стили.
+              - column:
+                  name: code_title
+                  value: Минимальный HTML-шаблон
+              - column:
+                  name: code_language
+                  value: html
+              - column:
+                  name: code_snippet
+                  value: |
+                    <!DOCTYPE html>
+                    <html lang="ru">
+                      <head>
+                        <meta charset="UTF-8" />
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                        <title>Моё первое приложение</title>
+                      </head>
+                      <body>
+                        <main>
+                          <h1>Добро пожаловать!</h1>
+                          <p>Контент появится здесь.</p>
+                        </main>
+                      </body>
+                    </html>
+              - column:
+                  name: cta_label
+                  value: Открыть песочницу
+              - column:
+                  name: cta_url
+                  value: https://codepen.io/pen
+        - insert:
+            tableName: instruction_sections
+            columns:
+              - column:
+                  name: id
+                  value: 51cd934f-573c-4bee-9792-93194f62f5d8
+              - column:
+                  name: instruction_id
+                  value: 5aa9e9f5-4b5f-4a9d-88c4-7f1c5b77b0e2
+              - column:
+                  name: position
+                  valueNumeric: 2
+              - column:
+                  name: title
+                  value: Добавляем семантические блоки
+              - column:
+                  name: content
+                  value: |
+                    Разбейте контент на логические секции: <header>, <nav>, <main>, <section>, <article>, <footer>.
+                    Так страницы станут доступнее для поисковых систем и ассистивных технологий.
+              - column:
+                  name: code_title
+                  value: Семантический макет
+              - column:
+                  name: code_language
+                  value: html
+              - column:
+                  name: code_snippet
+                  value: |
+                    <body>
+                      <header>...</header>
+                      <nav>...</nav>
+                      <main>
+                        <section>
+                          <h2>Новости</h2>
+                          <article>
+                            <h3>Обновление платформы</h3>
+                            <p>Мы внедрили новую систему дизайна.</p>
+                          </article>
+                        </section>
+                      </main>
+                      <footer>Контакты и ссылки</footer>
+                    </body>
+              - column:
+                  name: cta_label
+                  value: Проверить доступность
+              - column:
+                  name: cta_url
+                  value: https://wave.webaim.org/
+        - insert:
+            tableName: instruction_sections
+            columns:
+              - column:
+                  name: id
+                  value: f4f90d45-83b7-4bbd-8a6b-cc5a02fdaf3d
+              - column:
+                  name: instruction_id
+                  value: 5aa9e9f5-4b5f-4a9d-88c4-7f1c5b77b0e2
+              - column:
+                  name: position
+                  valueNumeric: 3
+              - column:
+                  name: title
+                  value: Контрольный список перед публикацией
+              - column:
+                  name: content
+                  value: |
+                    Проверьте заголовки, атрибуты alt у изображений, корректность ссылок и валидность документа.
+                    Автоматизируйте проверку через npm-скрипт или CI.
+              - column:
+                  name: code_title
+                  value: Команда для npm run lint:html
+              - column:
+                  name: code_language
+                  value: bash
+              - column:
+                  name: code_snippet
+                  value: |
+                    npm install --save-dev html-validate
+                    npx html-validate "src/**/*.html"
+              - column:
+                  name: cta_label
+                  value: Проверить валидатором W3C
+              - column:
+                  name: cta_url
+                  value: https://validator.w3.org/nu/
+        - insert:
+            tableName: instruction_sections
+            columns:
+              - column:
+                  name: id
+                  value: b44a2257-ae55-43b1-b6f9-e52f23f30906
+              - column:
+                  name: instruction_id
+                  value: 932cf0a1-b4c3-4ff0-9572-7c9f6f0c06b8
+              - column:
+                  name: position
+                  valueNumeric: 1
+              - column:
+                  name: title
+                  value: Заготовка проекта и зависимости
+              - column:
+                  name: content
+                  value: |
+                    Сгенерируйте проект через Spring Initializr. Подключите spring-boot-starter-web, validation и springdoc-openapi.
+                    Добавьте модульные и интеграционные зависимости, чтобы тесты запускались сразу.
+              - column:
+                  name: code_title
+                  value: Команда Maven для генерации
+              - column:
+                  name: code_language
+                  value: bash
+              - column:
+                  name: code_snippet
+                  value: |
+                    mvn archetype:generate -DgroupId=com.example -DartifactId=rest-blueprint \
+                      -DarchetypeArtifactId=maven-archetype-quickstart
+              - column:
+                  name: cta_label
+                  value: Открыть Spring Initializr
+              - column:
+                  name: cta_url
+                  value: https://start.spring.io/
+        - insert:
+            tableName: instruction_sections
+            columns:
+              - column:
+                  name: id
+                  value: 0b0fae15-432f-4f16-8b09-6f5e0a905a3c
+              - column:
+                  name: instruction_id
+                  value: 932cf0a1-b4c3-4ff0-9572-7c9f6f0c06b8
+              - column:
+                  name: position
+                  valueNumeric: 2
+              - column:
+                  name: title
+                  value: Контроллер, сервис и DTO
+              - column:
+                  name: content
+                  value: |
+                    Реализуйте контроллер с CRUD-методами, сервисный слой и DTO с валидацией.
+                    Используйте ResponseEntity и централизованный обработчик ошибок.
+              - column:
+                  name: code_title
+                  value: Фрагмент контроллера
+              - column:
+                  name: code_language
+                  value: java
+              - column:
+                  name: code_snippet
+                  value: |
+                    @RestController
+                    @RequestMapping("/api/articles")
+                    class ArticleController {
+                        private final ArticleService service;
+
+                        @PostMapping
+                        ResponseEntity<ArticleResponse> create(@Valid @RequestBody ArticleRequest request) {
+                            return ResponseEntity.status(HttpStatus.CREATED)
+                                    .body(service.create(request));
+                        }
+                    }
+              - column:
+                  name: cta_label
+                  value: Посмотреть гайд по DTO
+              - column:
+                  name: cta_url
+                  value: https://reflectoring.io/spring-boot-dto-pattern/
+        - insert:
+            tableName: instruction_sections
+            columns:
+              - column:
+                  name: id
+                  value: 2f30b0f5-625b-4251-9f8d-e2872aa3c8cf
+              - column:
+                  name: instruction_id
+                  value: 932cf0a1-b4c3-4ff0-9572-7c9f6f0c06b8
+              - column:
+                  name: position
+                  valueNumeric: 3
+              - column:
+                  name: title
+                  value: Документация и тесты
+              - column:
+                  name: content
+                  value: |
+                    Подключите springdoc-openapi, добавьте unit- и slice-тесты, настройте Testcontainers для интеграций.
+                    Автоматизируйте запуск проверок через GitHub Actions.
+              - column:
+                  name: code_title
+                  value: Конфигурация GitHub Actions
+              - column:
+                  name: code_language
+                  value: yaml
+              - column:
+                  name: code_snippet
+                  value: |
+                    name: Java CI
+                    on: [push, pull_request]
+                    jobs:
+                      build:
+                        runs-on: ubuntu-latest
+                        steps:
+                          - uses: actions/checkout@v4
+                          - uses: actions/setup-java@v4
+                            with:
+                              distribution: temurin
+                              java-version: 21
+                          - run: mvn verify
+              - column:
+                  name: cta_label
+                  value: Открыть пример workflow
+              - column:
+                  name: cta_url
+                  value: https://github.com/actions/starter-workflows
+        - insert:
+            tableName: instruction_sections
+            columns:
+              - column:
+                  name: id
+                  value: 43cb10a1-4f93-446c-9a53-5dd094f8c9ac
+              - column:
+                  name: instruction_id
+                  value: a7e5aee1-4d72-4a48-bd4d-0f8f62b4f889
+              - column:
+                  name: position
+                  valueNumeric: 1
+              - column:
+                  name: title
+                  value: Готовим Dockerfile
+              - column:
+                  name: content
+                  value: |
+                    Опишите базовый образ, рабочую директорию и кэширование зависимостей.
+                    Для Node.js или Spring Boot вынесите сборку в отдельный слой, чтобы ускорить сборку при повторном запуске.
+              - column:
+                  name: code_title
+                  value: Пример Dockerfile для Spring Boot
+              - column:
+                  name: code_language
+                  value: dockerfile
+              - column:
+                  name: code_snippet
+                  value: |
+                    FROM eclipse-temurin:21-jdk AS build
+                    WORKDIR /workspace
+                    COPY mvnw .
+                    COPY .mvn .mvn
+                    COPY pom.xml .
+                    RUN ./mvnw dependency:go-offline
+                    COPY src src
+                    RUN ./mvnw package -DskipTests
+
+                    FROM eclipse-temurin:21-jre
+                    WORKDIR /app
+                    COPY --from=build /workspace/target/app.jar app.jar
+                    ENTRYPOINT ["java","-jar","/app/app.jar"]
+              - column:
+                  name: cta_label
+                  value: Проверить best practices
+              - column:
+                  name: cta_url
+                  value: https://docs.docker.com/develop/dev-best-practices/
+        - insert:
+            tableName: instruction_sections
+            columns:
+              - column:
+                  name: id
+                  value: 6c4226d2-7138-4f3a-bf0c-6e9347c414ab
+              - column:
+                  name: instruction_id
+                  value: a7e5aee1-4d72-4a48-bd4d-0f8f62b4f889
+              - column:
+                  name: position
+                  valueNumeric: 2
+              - column:
+                  name: title
+                  value: Описываем docker-compose.yml
+              - column:
+                  name: content
+                  value: |
+                    Создайте сервисы приложения, базы данных и вспомогательных инструментов.
+                    Настройте named volume для данных и healthcheck для автоматической проверки готовности.
+              - column:
+                  name: code_title
+                  value: Фрагмент docker-compose.yml
+              - column:
+                  name: code_language
+                  value: yaml
+              - column:
+                  name: code_snippet
+                  value: |
+                    services:
+                      app:
+                        build: .
+                        ports:
+                          - "8080:8080"
+                        depends_on:
+                          db:
+                            condition: service_healthy
+                      db:
+                        image: postgres:16
+                        environment:
+                          POSTGRES_DB: app
+                          POSTGRES_USER: app
+                          POSTGRES_PASSWORD: app
+                        volumes:
+                          - db-data:/var/lib/postgresql/data
+                        healthcheck:
+                          test: ["CMD-SHELL", "pg_isready -U app"]
+                          interval: 10s
+                          timeout: 5s
+                          retries: 5
+                    volumes:
+                      db-data:
+              - column:
+                  name: cta_label
+                  value: Посмотреть готовые примеры
+              - column:
+                  name: cta_url
+                  value: https://github.com/docker/awesome-compose
+        - insert:
+            tableName: instruction_sections
+            columns:
+              - column:
+                  name: id
+                  value: 9493a539-1a0f-4f3c-9fa7-0ff61364b562
+              - column:
+                  name: instruction_id
+                  value: a7e5aee1-4d72-4a48-bd4d-0f8f62b4f889
+              - column:
+                  name: position
+                  valueNumeric: 3
+              - column:
+                  name: title
+                  value: Автоматизируем проверку окружения
+              - column:
+                  name: content
+                  value: |
+                    Добавьте makefile или npm-скрипт, который собирает и поднимает стек, прогоняет тесты и выгружает логи.
+                    Подключите этот сценарий к CI, чтобы новые разработчики видели статус окружения.
+              - column:
+                  name: code_title
+                  value: Makefile для быстрого старта
+              - column:
+                  name: code_language
+                  value: makefile
+              - column:
+                  name: code_snippet
+                  value: |
+                    up:
+                    docker compose up -d --build
+
+                    check:
+                    docker compose exec app curl -f http://localhost:8080/actuator/health
+
+                    logs:
+                    docker compose logs -f app
+              - column:
+                  name: cta_label
+                  value: Настроить CI для compose
+              - column:
+                  name: cta_url
+                  value: https://docs.github.com/actions/using-workflows/workflow-syntax-for-github-actions
+        - insert:
+            tableName: instruction_resources
+            columns:
+              - column:
+                  name: id
+                  value: 8e52b5a0-1fd1-4dd0-b7a2-8f91203e5a57
+              - column:
+                  name: instruction_id
+                  value: 5aa9e9f5-4b5f-4a9d-88c4-7f1c5b77b0e2
+              - column:
+                  name: position
+                  valueNumeric: 1
+              - column:
+                  name: type
+                  value: guide
+              - column:
+                  name: title
+                  value: MDN — HTML элементы
+              - column:
+                  name: description
+                  value: Справочник по семантическим тегам и их назначению.
+              - column:
+                  name: url
+                  value: https://developer.mozilla.org/ru/docs/Web/HTML/Element
+        - insert:
+            tableName: instruction_resources
+            columns:
+              - column:
+                  name: id
+                  value: 1d6386be-4b3f-4c62-ab4d-0940b0f6b9d5
+              - column:
+                  name: instruction_id
+                  value: 5aa9e9f5-4b5f-4a9d-88c4-7f1c5b77b0e2
+              - column:
+                  name: position
+                  valueNumeric: 2
+              - column:
+                  name: type
+                  value: checklist
+              - column:
+                  name: title
+                  value: Frontend Checklist
+              - column:
+                  name: description
+                  value: Большой список проверок качества фронтенда с акцентом на доступность.
+              - column:
+                  name: url
+                  value: https://frontendchecklist.io/
+        - insert:
+            tableName: instruction_resources
+            columns:
+              - column:
+                  name: id
+                  value: 1a1aefc1-77b6-4b2c-8d65-d5c5ac9e99d5
+              - column:
+                  name: instruction_id
+                  value: 932cf0a1-b4c3-4ff0-9572-7c9f6f0c06b8
+              - column:
+                  name: position
+                  valueNumeric: 1
+              - column:
+                  name: type
+                  value: docs
+              - column:
+                  name: title
+                  value: Spring Boot Reference
+              - column:
+                  name: description
+                  value: Официальная документация Spring Boot с актуальными рекомендациями.
+              - column:
+                  name: url
+                  value: https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/
+        - insert:
+            tableName: instruction_resources
+            columns:
+              - column:
+                  name: id
+                  value: 2c6e4427-205b-4289-943b-7c724e5d862e
+              - column:
+                  name: instruction_id
+                  value: 932cf0a1-b4c3-4ff0-9572-7c9f6f0c06b8
+              - column:
+                  name: position
+                  valueNumeric: 2
+              - column:
+                  name: type
+                  value: cheatsheet
+              - column:
+                  name: title
+                  value: Bean Validation Cheatsheet
+              - column:
+                  name: description
+                  value: Подборка аннотаций и примеров для Jakarta Bean Validation.
+              - column:
+                  name: url
+                  value: https://www.baeldung.com/java-bean-validation-cheat-sheet
+        - insert:
+            tableName: instruction_resources
+            columns:
+              - column:
+                  name: id
+                  value: e2c026cc-3e2d-4df4-8f74-4d7963e6c2e9
+              - column:
+                  name: instruction_id
+                  value: a7e5aee1-4d72-4a48-bd4d-0f8f62b4f889
+              - column:
+                  name: position
+                  valueNumeric: 1
+              - column:
+                  name: type
+                  value: docs
+              - column:
+                  name: title
+                  value: Docker Compose Docs
+              - column:
+                  name: description
+                  value: Руководство по ключевым возможностям docker compose v2.
+              - column:
+                  name: url
+                  value: https://docs.docker.com/compose/
+        - insert:
+            tableName: instruction_resources
+            columns:
+              - column:
+                  name: id
+                  value: 1b5a42cc-2c3d-4764-90a8-cff27fbbcc51
+              - column:
+                  name: instruction_id
+                  value: a7e5aee1-4d72-4a48-bd4d-0f8f62b4f889
+              - column:
+                  name: position
+                  valueNumeric: 2
+              - column:
+                  name: type
+                  value: tool
+              - column:
+                  name: title
+                  value: Play with Docker
+              - column:
+                  name: description
+                  value: Облачная песочница для тренировки docker-команд и compose.
+              - column:
+                  name: url
+                  value: https://labs.play-with-docker.com/

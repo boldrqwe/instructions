@@ -1,6 +1,10 @@
 package com.boldin.instructions.web;
 
 import com.boldin.instructions.domain.Instruction;
+import com.boldin.instructions.domain.InstructionDifficulty;
+import com.boldin.instructions.service.InstructionDraft;
+import com.boldin.instructions.service.InstructionResourceDraft;
+import com.boldin.instructions.service.InstructionSectionDraft;
 import com.boldin.instructions.service.InstructionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -30,9 +34,9 @@ public class InstructionController {
     }
 
     @GetMapping
-    public List<InstructionResponse> getAll() {
+    public List<InstructionSummaryResponse> getAll() {
         return instructionService.findAll().stream()
-                .map(InstructionResponse::fromEntity)
+                .map(InstructionSummaryResponse::fromEntity)
                 .toList();
     }
 
@@ -42,16 +46,24 @@ public class InstructionController {
         return InstructionResponse.fromEntity(instruction);
     }
 
+    @GetMapping("/slug/{slug}")
+    public InstructionResponse getBySlug(@PathVariable String slug) {
+        Instruction instruction = instructionService.getBySlug(slug);
+        return InstructionResponse.fromEntity(instruction);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public InstructionResponse create(@Valid @RequestBody InstructionRequest request) {
-        Instruction created = instructionService.create(request.title(), request.content());
+        InstructionDraft draft = toDraft(request);
+        Instruction created = instructionService.create(draft);
         return InstructionResponse.fromEntity(created);
     }
 
     @PutMapping("/{id}")
     public InstructionResponse update(@PathVariable UUID id, @Valid @RequestBody InstructionRequest request) {
-        Instruction updated = instructionService.update(id, request.title(), request.content());
+        InstructionDraft draft = toDraft(request);
+        Instruction updated = instructionService.update(id, draft);
         return InstructionResponse.fromEntity(updated);
     }
 
@@ -59,5 +71,42 @@ public class InstructionController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
         instructionService.delete(id);
+    }
+
+    private InstructionDraft toDraft(InstructionRequest request) {
+        List<String> tags = request.tags() == null ? List.of() : List.copyOf(request.tags());
+        List<InstructionSectionDraft> sections = request.sections() == null ? List.of() : request.sections().stream()
+                .map(section -> new InstructionSectionDraft(
+                        section.title(),
+                        section.content(),
+                        section.codeTitle(),
+                        section.codeLanguage(),
+                        section.codeSnippet(),
+                        section.ctaLabel(),
+                        section.ctaUrl()
+                ))
+                .toList();
+        List<InstructionResourceDraft> resources = request.resources() == null ? List.of() : request.resources().stream()
+                .map(resource -> new InstructionResourceDraft(
+                        resource.type(),
+                        resource.title(),
+                        resource.description(),
+                        resource.url()
+                ))
+                .toList();
+
+        return new InstructionDraft(
+                request.slug(),
+                request.title(),
+                request.summary(),
+                request.introduction(),
+                InstructionDifficulty.fromValue(request.difficulty()),
+                request.estimatedMinutes(),
+                request.prerequisites(),
+                request.categorySlug(),
+                tags,
+                sections,
+                resources
+        );
     }
 }

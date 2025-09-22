@@ -1,6 +1,9 @@
 package com.boldin.instructions.service;
 
 import com.boldin.instructions.domain.Instruction;
+import com.boldin.instructions.domain.InstructionCategory;
+import com.boldin.instructions.domain.InstructionCategoryRepository;
+import com.boldin.instructions.domain.InstructionDifficulty;
 import com.boldin.instructions.domain.InstructionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,44 +20,167 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class InstructionServiceTest {
 
     @Autowired
-    private InstructionRepository repository;
+    private InstructionRepository instructionRepository;
+
+    @Autowired
+    private InstructionCategoryRepository categoryRepository;
 
     private InstructionService service;
 
+    private InstructionCategory category;
+
     @BeforeEach
     void setUp() {
-        repository.deleteAll();
-        service = new InstructionService(repository);
+        instructionRepository.deleteAll();
+        categoryRepository.deleteAll();
+        service = new InstructionService(instructionRepository, categoryRepository);
+        category = categoryRepository.save(new InstructionCategory(
+                "frontend",
+                "Frontend",
+                "Руководства по интерфейсам",
+                "🧱"
+        ));
     }
 
     @Test
-    void createInstructionPersistsEntity() {
-        Instruction instruction = service.create("Тест", "Проверка сохранения");
+    void createInstructionPersistsRichStructure() {
+        InstructionDraft draft = new InstructionDraft(
+                "html-basics",
+                "HTML Basics",
+                "Краткий обзор HTML",
+                "Вводный текст",
+                InstructionDifficulty.BEGINNER,
+                25,
+                "Желателен опыт работы с браузером",
+                category.getSlug(),
+                List.of("HTML", "Starter"),
+                List.of(new InstructionSectionDraft(
+                        "Каркас",
+                        "Создаём базовый документ",
+                        "Каркас",
+                        "html",
+                        "<h1>Hello</h1>",
+                        "Попробовать",
+                        "https://example.com"
+                )),
+                List.of(new InstructionResourceDraft(
+                        "guide",
+                        "MDN",
+                        "Справочник",
+                        "https://developer.mozilla.org"
+                ))
+        );
 
-        List<Instruction> all = repository.findAll();
-        assertThat(all).hasSize(1);
-        assertThat(all.get(0).getTitle()).isEqualTo("Тест");
-        assertThat(instruction.getId()).isNotNull();
+        Instruction created = service.create(draft);
+        Instruction persisted = service.getById(created.getId());
+
+        assertThat(persisted.getSlug()).isEqualTo("html-basics");
+        assertThat(persisted.getDifficulty()).isEqualTo(InstructionDifficulty.BEGINNER);
+        assertThat(persisted.getTags()).containsExactly("HTML", "Starter");
+        assertThat(persisted.getSections()).hasSize(1);
+        assertThat(persisted.getResources()).hasSize(1);
     }
 
     @Test
-    void updateInstructionChangesFields() {
-        Instruction instruction = service.create("Старое", "Описание");
+    void updateInstructionReplacesNestedCollections() {
+        Instruction initial = service.create(new InstructionDraft(
+                "html-basics",
+                "HTML Basics",
+                "Краткий обзор HTML",
+                "Вводный текст",
+                InstructionDifficulty.BEGINNER,
+                25,
+                null,
+                category.getSlug(),
+                List.of("HTML"),
+                List.of(new InstructionSectionDraft(
+                        "Каркас",
+                        "Создаём базовый документ",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                )),
+                List.of()
+        ));
 
-        Instruction updated = service.update(instruction.getId(), "Новое", "Обновленное описание");
+        InstructionDraft updateDraft = new InstructionDraft(
+                "html-pro",
+                "HTML Pro",
+                "Расширенный HTML",
+                "Новый вводный текст",
+                InstructionDifficulty.INTERMEDIATE,
+                40,
+                "Опыт работы с семантикой",
+                category.getSlug(),
+                List.of("HTML", "Accessibility"),
+                List.of(
+                        new InstructionSectionDraft(
+                                "Аудит",
+                                "Проверяем доступность",
+                                null,
+                                null,
+                                null,
+                                "Открыть чеклист",
+                                "https://frontendchecklist.io"
+                        ),
+                        new InstructionSectionDraft(
+                                "Тесты",
+                                "Добавляем линтер",
+                                "Команда",
+                                "bash",
+                                "npm run lint",
+                                null,
+                                null
+                        )
+                ),
+                List.of(new InstructionResourceDraft(
+                        "cheatsheet",
+                        "HTML Cheat Sheet",
+                        "Сводка по тегам",
+                        "https://htmlcheatsheet.com"
+                ))
+        );
 
-        assertThat(updated.getTitle()).isEqualTo("Новое");
-        assertThat(updated.getContent()).isEqualTo("Обновленное описание");
-        assertThat(repository.findById(instruction.getId())).contains(updated);
+        Instruction updated = service.update(initial.getId(), updateDraft);
+
+        assertThat(updated.getSlug()).isEqualTo("html-pro");
+        Instruction persisted = service.getById(initial.getId());
+        assertThat(persisted.getSections()).hasSize(2);
+        assertThat(persisted.getSections().get(0).getTitle()).isEqualTo("Аудит");
+        assertThat(persisted.getResources()).singleElement()
+                .satisfies(resource -> assertThat(resource.getType()).isEqualTo("cheatsheet"));
+        assertThat(persisted.getTags()).containsExactly("HTML", "Accessibility");
+        assertThat(persisted.getDifficulty()).isEqualTo(InstructionDifficulty.INTERMEDIATE);
     }
 
     @Test
-    void deleteInstructionRemovesEntity() {
-        Instruction instruction = service.create("Удалить", "Удаляем");
+    void getBySlugReturnsInstruction() {
+        Instruction created = service.create(new InstructionDraft(
+                "html-basics",
+                "HTML Basics",
+                "Краткий обзор HTML",
+                "Вводный текст",
+                InstructionDifficulty.BEGINNER,
+                15,
+                null,
+                category.getSlug(),
+                List.of(),
+                List.of(new InstructionSectionDraft(
+                        "Раздел",
+                        "Описание",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                )),
+                List.of()
+        ));
 
-        service.delete(instruction.getId());
-
-        assertThat(repository.findAll()).isEmpty();
+        Instruction bySlug = service.getBySlug("html-basics");
+        assertThat(bySlug.getId()).isEqualTo(created.getId());
     }
 
     @Test
