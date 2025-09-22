@@ -4,7 +4,7 @@ databaseChangeLog:
       author: instructions
       changes:
         - createTable:
-            tableName: instructions
+            tableName: instruction_categories
             columns:
               - column:
                   name: id
@@ -13,13 +13,24 @@ databaseChangeLog:
                     primaryKey: true
                     nullable: false
               - column:
+                  name: slug
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
                   name: title
                   type: VARCHAR(180)
                   constraints:
                     nullable: false
               - column:
-                  name: content
-                  type: VARCHAR(4096)
+                  name: description
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: icon
+                  type: VARCHAR(16)
                   constraints:
                     nullable: false
               - column:
@@ -32,3 +43,201 @@ databaseChangeLog:
                   type: TIMESTAMP
                   constraints:
                     nullable: false
+        - createTable:
+            tableName: instructions
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: category_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: slug
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: title
+                  type: VARCHAR(180)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: summary
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: introduction
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: difficulty
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: estimated_minutes
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prerequisites
+                  type: VARCHAR(1024)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_instructions_category
+            baseTableName: instructions
+            baseColumnNames: category_id
+            referencedTableName: instruction_categories
+            referencedColumnNames: id
+        - createTable:
+            tableName: instruction_sections
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: instruction_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: position
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(180)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code_title
+                  type: VARCHAR(180)
+              - column:
+                  name: code_language
+                  type: VARCHAR(32)
+              - column:
+                  name: code_snippet
+                  type: CLOB
+              - column:
+                  name: cta_label
+                  type: VARCHAR(120)
+              - column:
+                  name: cta_url
+                  type: VARCHAR(512)
+        - addForeignKeyConstraint:
+            constraintName: fk_instruction_sections_instruction
+            baseTableName: instruction_sections
+            baseColumnNames: instruction_id
+            referencedTableName: instructions
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addUniqueConstraint:
+            tableName: instruction_sections
+            columnNames: instruction_id, position
+            constraintName: uq_instruction_sections_order
+        - createTable:
+            tableName: instruction_resources
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: instruction_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: position
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(180)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: url
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_instruction_resources_instruction
+            baseTableName: instruction_resources
+            baseColumnNames: instruction_id
+            referencedTableName: instructions
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addUniqueConstraint:
+            tableName: instruction_resources
+            columnNames: instruction_id, position
+            constraintName: uq_instruction_resources_order
+        - createTable:
+            tableName: instruction_tags
+            columns:
+              - column:
+                  name: instruction_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tag_order
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tag
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: instruction_tags
+            columnNames: instruction_id, tag_order
+            constraintName: pk_instruction_tags
+        - addForeignKeyConstraint:
+            constraintName: fk_instruction_tags_instruction
+            baseTableName: instruction_tags
+            baseColumnNames: instruction_id
+            referencedTableName: instructions
+            referencedColumnNames: id
+            onDelete: CASCADE
