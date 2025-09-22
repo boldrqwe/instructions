@@ -14,8 +14,6 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/instructions-backend
-  K8S_NAMESPACE: apps
-  DEPLOYMENT_NAME: my-service
 
 jobs:
   build:
@@ -88,131 +86,40 @@ jobs:
         run: echo "value=${{ env.IMAGE_NAME }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
   deploy:
-    name: Apply Kubernetes manifests
-    runs-on: [ self-hosted, linux, k8s, prod ]   # ← вместо ubuntu-latest
+    name: Cluster smoke (namespace only)
+    runs-on: self-hosted
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    env:
-      IMAGE_TO_DEPLOY: ${{ needs.build.outputs['image-tag'] }}
-      KUBECONFIG_PATH: /root/.kube/config       # ← kubeconfig лежит на хосте раннера
-      K8S_NAMESPACE: apps
-      DEPLOYMENT_NAME: my-service
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # kubectl можно не ставить, если он уже есть на раннере.
-      # Оставлю установку на всякий случай — вреда не будет.
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
         with:
           version: 'v1.29.2'
 
-      # Проверяем, что kubeconfig существует, и печатаем endpoint
-      - name: Check kubeconfig and cluster endpoint
-        run: |
-          if [[ ! -f "${KUBECONFIG_PATH}" ]]; then
-            echo "::error::KUBECONFIG not found at ${KUBECONFIG_PATH}"
-            exit 1
-          fi
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" version --client
-          EP=$(kubectl --kubeconfig "${KUBECONFIG_PATH}" config view --minify -o jsonpath='{.clusters[0].cluster.server}')
-          echo "Cluster endpoint: ${EP}"
-
-      # Ждём доступности API, чтобы не падать на apply
-      - name: Wait for kube-api
-        run: |
-          end=$((SECONDS+60))
-          while (( SECONDS < end )); do
-            if kubectl --kubeconfig "${KUBECONFIG_PATH}" get --raw=/version >/dev/null 2>&1; then
-              echo "API is reachable"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "::error::kube-api is not reachable"
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" cluster-info || true
-          exit 1
-
-      # envsubst для шаблонов
-      - name: Install envsubst tool
-        run: sudo apt-get update && sudo apt-get install -y gettext-base
-
-      # Рендер шаблонов c тегом образа
-      - name: Render Kubernetes manifests
+      - name: Configure kubeconfig
         env:
-          IMAGE: ${{ env.IMAGE_TO_DEPLOY }}
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG }}
         run: |
-          envsubst < k8s/deployment.yaml.tpl > k8s/deployment.yaml
-          envsubst < k8s/service.yaml.tpl    > k8s/service.yaml
-          echo "::group::Rendered deployment"; cat k8s/deployment.yaml; echo "::endgroup::"
-          echo "::group::Rendered service";    cat k8s/service.yaml;    echo "::endgroup::"
+          mkdir -p "$HOME/.kube"
+          echo "$KUBE_CONFIG_B64" | base64 --decode > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
 
-      # Неймспейс
+      - name: Cluster info
+        run: |
+          set -e
+          kubectl cluster-info
+          kubectl version --short
+          kubectl auth can-i '*' '*' || true
+          kubectl get nodes -o wide
+
       - name: Ensure namespace exists
         run: |
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" create namespace "${K8S_NAMESPACE}" --dry-run=client -o yaml | \
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" apply -f -
+          kubectl apply -f k8s/namespace.yaml
+          kubectl get ns apps
 
-      # Применяем
-      - name: Apply manifests
+      - name: Recent events
         run: |
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/secret.yaml
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/configmap.yaml
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/postgres.yaml
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/logback-configmap.yaml
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/deployment.yaml
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/service.yaml
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/frontend-configmap.yaml
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/frontend.yaml
-
-      - name: Wait for Postgres readiness
-        run: |
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" rollout status statefulset/postgres --timeout=180s
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" wait --for=condition=ready pod -l app=postgres --timeout=180s
-
-      - name: Wait for backend rollout
-        run: |
-          set +e
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" rollout status "deployment/${DEPLOYMENT_NAME}" --timeout=300s
-          rc=$?
-          if [ $rc -ne 0 ]; then
-            echo "::group::Diagnostics: deployments/rs/pods"
-            kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" get deploy,rs,pods -o wide
-            echo "::endgroup::"
-
-            echo "::group::Diagnostics: describe deployment"
-            kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" describe deploy "${DEPLOYMENT_NAME}"
-            echo "::endgroup::"
-
-            echo "::group::Diagnostics: recent events"
-            kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" get events --sort-by=.lastTimestamp | tail -n 100
-            echo "::endgroup::"
-
-            echo "::group::Diagnostics: pod logs (current/previous)"
-            POD=$(kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" get pods -l app=${DEPLOYMENT_NAME} -o jsonpath='{.items[0].metadata.name}')
-            if [ -n "$POD" ]; then
-              kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" logs "$POD" --tail=200 || true
-              kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" logs "$POD" --previous --tail=200 || true
-            else
-              echo "No ${DEPLOYMENT_NAME} pods found for log collection"
-            fi
-            echo "::endgroup::"
-
-            exit 1
-          fi
-          set -e
-
-      - name: Smoke test backend health endpoint
-        run: |
-          kubectl --request-timeout=60s --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" run "curl-smoke-${GITHUB_RUN_NUMBER}" \
-            --image=curlimages/curl --restart=Never --attach --rm --quiet -- \
-            -sS http://my-service:8080/actuator/health | tee /tmp/health.json
-          grep -q '"status":"UP"' /tmp/health.json
-
-      - name: Smoke test frontend placeholder
-        run: |
-          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" run curl-frontend --rm --restart=Never --image=curlimages/curl --command -- \
-            sh -c 'curl -sS -o /dev/null -w "%{http_code}" http://frontend:80 | grep 200'
- 
+          kubectl get events --sort-by=.lastTimestamp | tail -n 20 || true
