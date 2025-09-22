@@ -11,14 +11,23 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.UUID;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "instruction_sections")
 public class InstructionSection {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Setter(AccessLevel.NONE)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -50,83 +59,4 @@ public class InstructionSection {
 
     @Column(name = "cta_url", length = 512)
     private String ctaUrl;
-
-    public InstructionSection() {
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public Instruction getInstruction() {
-        return instruction;
-    }
-
-    public void setInstruction(Instruction instruction) {
-        this.instruction = instruction;
-    }
-
-    public int getPosition() {
-        return position;
-    }
-
-    public void setPosition(int position) {
-        this.position = position;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public String getCodeTitle() {
-        return codeTitle;
-    }
-
-    public void setCodeTitle(String codeTitle) {
-        this.codeTitle = codeTitle;
-    }
-
-    public String getCodeLanguage() {
-        return codeLanguage;
-    }
-
-    public void setCodeLanguage(String codeLanguage) {
-        this.codeLanguage = codeLanguage;
-    }
-
-    public String getCodeSnippet() {
-        return codeSnippet;
-    }
-
-    public void setCodeSnippet(String codeSnippet) {
-        this.codeSnippet = codeSnippet;
-    }
-
-    public String getCtaLabel() {
-        return ctaLabel;
-    }
-
-    public void setCtaLabel(String ctaLabel) {
-        this.ctaLabel = ctaLabel;
-    }
-
-    public String getCtaUrl() {
-        return ctaUrl;
-    }
-
-    public void setCtaUrl(String ctaUrl) {
-        this.ctaUrl = ctaUrl;
-    }
 }
