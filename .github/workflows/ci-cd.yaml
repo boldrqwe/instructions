@@ -1,8 +1,10 @@
-name: CI/CD Pipeline
+name: Backend CI/CD
 
 on:
   push:
-    branches: [ main, work ]
+    branches:
+      - main
+      - work
   pull_request:
 
 permissions:
@@ -11,137 +13,126 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_BACKEND: ghcr.io/${{ github.repository_owner }}/instructions-backend
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/instructions-backend
   K8S_NAMESPACE: apps
   DEPLOYMENT_NAME: my-service
 
 jobs:
-  build-and-test:
+  build:
+    name: Test backend and publish container image
     runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.image-tag.outputs.value }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # JDK 25, как у тебя было
-      - name: Set up JDK 25 (jdk.java.net)
-        uses: oracle-actions/setup-java@v1
+      # Устанавливаем стабильный Temurin JDK 21 и подключаем кэш Maven.
+      - name: Set up Temurin JDK 21
+        uses: actions/setup-java@v4
         with:
-          website: jdk.java.net
-          release: 25
+          distribution: temurin
+          java-version: '21'
           cache: maven
 
-      - name: Configure Maven toolchains (force JDK 25)
+      # Показываем версии инструментов, чтобы диагностика была прозрачной.
+      - name: Show Java and Maven versions
         run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/toolchains.xml << 'EOF'
-          <toolchains>
-            <toolchain>
-              <type>jdk</type>
-              <provides><version>25</version><vendor>any</vendor></provides>
-              <configuration><jdkHome>${JAVA_HOME}</jdkHome></configuration>
-            </toolchain>
-          </toolchains>
-          EOF
-
-      - name: Show Java/Maven
-        run: |
-          echo "JAVA_HOME=$JAVA_HOME"
           java -version
-          mvn -v
+          mvn -version
 
-      # Локально прогоняем тесты (артефакт jar нам не нужен вне Docker'a)
-      - name: Build and test with Maven
+      # Гоним юнит-тесты и проверяем, что код собирается на чистом агенте.
+      - name: Run Maven verify
         working-directory: backend
         run: mvn -B -Dspring.profiles.active=test verify
 
-      - name: Upload surefire reports
+      # Если тесты упали, отчёты будут приложены к джобе.
+      - name: Upload Surefire reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-reports
+          name: backend-surefire-reports
           path: backend/target/surefire-reports
           if-no-files-found: ignore
 
-      - name: Log in to GHCR
-        if: github.event_name == 'push'
+      # Авторизация в GitHub Container Registry нужна только когда пушим в main.
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          install: true
-          driver: docker-container
-
-      - name: Extract Docker metadata (backend)
-        id: meta
-        if: github.event_name == 'push'
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_BACKEND }}
-          tags: |
-            type=raw,value=${{ github.sha }}
-            type=ref,event=branch
-          flavor: |
-            latest=true
-
-      # ВАЖНО: теперь Dockerfile сам собирает jar (мультистейдж),
-      # так что никакого COPY target/*.jar из внешнего контекста
-      - name: Build and push backend image
-        if: github.event_name == 'push'
+      # Собираем Docker-образ. На PR просто проверяем, что сборка проходит, а на main ещё и пушим.
+      - name: Build backend image
+        id: build-image
         uses: docker/build-push-action@v5
         with:
           context: backend
           file: backend/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Передаём тег образа в следующую джобу, чтобы не вычислять его повторно.
+      - name: Expose image tag for deploy job
+        id: image-tag
+        run: echo "value=${{ env.IMAGE_NAME }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
   deploy:
+    name: Apply Kubernetes manifests
     runs-on: ubuntu-latest
-    needs: build-and-test
-    if: github.ref == 'refs/heads/main'
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      IMAGE_TO_DEPLOY: ${{ needs.build.outputs['image-tag'] }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies for templating
-        run: sudo apt-get update && sudo apt-get install -y gettext-base
-
-      - name: Configure kubectl
-        run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
-
-      - name: Set up kubectl
+      # Ставим kubectl подходящей версии.
+      - name: Install kubectl
         uses: azure/setup-kubectl@v4
         with:
           version: 'v1.29.2'
 
+      # Пробрасываем kubeconfig из секретов GitHub.
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      # envsubst из пакета gettext нужен для шаблонов манифестов.
+      - name: Install envsubst tool
+        run: sudo apt-get update && sudo apt-get install -y gettext-base
+
+      # Рендерим манифесты, подставляя свежий тег образа.
       - name: Render Kubernetes manifests
         env:
-          IMAGE: ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
+          IMAGE: ${{ env.IMAGE_TO_DEPLOY }}
         run: |
           envsubst < k8s/deployment.yaml.tpl > k8s/deployment.yaml
           envsubst < k8s/service.yaml.tpl > k8s/service.yaml
-          echo "::group::Rendered deployment"; cat k8s/deployment.yaml; echo "::endgroup::"
-          echo "::group::Rendered service"; cat k8s/service.yaml; echo "::endgroup::"
+          echo "::group::Rendered deployment" && cat k8s/deployment.yaml && echo "::endgroup::"
+          echo "::group::Rendered service" && cat k8s/service.yaml && echo "::endgroup::"
 
-      - name: Create namespace if missing
+      # Простая защита от отсутствующего namespace.
+      - name: Ensure namespace exists
         run: |
           kubectl create namespace ${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Deploy to Kubernetes
+      # Применяем манифесты.
+      - name: Apply manifests
         run: |
           kubectl apply -n ${{ env.K8S_NAMESPACE }} -f k8s/deployment.yaml
           kubectl apply -n ${{ env.K8S_NAMESPACE }} -f k8s/service.yaml
 
+      # И ждём, пока развёртывание обновится.
       - name: Wait for rollout
         run: |
           kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n ${{ env.K8S_NAMESPACE }}
