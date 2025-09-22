@@ -106,8 +106,23 @@ jobs:
           mkdir -p "$HOME/.kube"
           echo "$KUBE_CONFIG_B64" | base64 --decode > "$HOME/.kube/config"
           chmod 600 "$HOME/.kube/config"
+          echo "KUBECONFIG_PATH=$HOME/.kube/config" >> "$GITHUB_ENV"
+
+      - name: Preflight: (optional) override API server and ping
+        id: preflight
+        env:
+          KUBECONFIG_PATH: ${{ env.KUBECONFIG_PATH }}
+          API_SERVER_OVERRIDE: ${{ secrets.API_SERVER_OVERRIDE }}
+        run: |
+          bash scripts/k8s_preflight.sh "${KUBECONFIG_PATH:-$HOME/.kube/config}" "$API_SERVER_OVERRIDE"
+
+      - name: Cluster API unavailable - skip deploy
+        if: steps.preflight.outputs.api_ok != 'true'
+        run: |
+          echo "Cluster API unreachable (${{ steps.preflight.outputs.server }}), skipped deploy."
 
       - name: Cluster info
+        if: steps.preflight.outputs.api_ok == 'true'
         run: |
           set -e
           kubectl cluster-info
@@ -116,10 +131,12 @@ jobs:
           kubectl get nodes -o wide
 
       - name: Ensure namespace exists
+        if: steps.preflight.outputs.api_ok == 'true'
         run: |
           kubectl apply -f k8s/namespace.yaml
           kubectl get ns apps
 
       - name: Recent events
+        if: steps.preflight.outputs.api_ok == 'true'
         run: |
           kubectl get events --sort-by=.lastTimestamp | tail -n 20 || true
