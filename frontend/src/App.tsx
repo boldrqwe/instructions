@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import {
   fetchInstructionDetail,
   fetchInstructionSummaries,
@@ -6,6 +7,7 @@ import {
   InstructionSummary,
 } from './api';
 import './App.css';
+import InstructionForm from './InstructionForm';
 
 function difficultyLabel(value: string): string {
   switch (value) {
@@ -32,6 +34,7 @@ function App() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
 
   useEffect(() => {
     fetchInstructionSummaries()
@@ -49,6 +52,7 @@ function App() {
   }, []);
 
   const selectInstruction = (slug: string) => {
+    setShowEditor(false);
     setActiveSlug(slug);
     setLoadingDetail(true);
     fetchInstructionDetail(slug)
@@ -58,8 +62,32 @@ function App() {
       })
       .catch((err: Error) => {
         setDetailError(err.message);
+        setSelected(null);
       })
       .finally(() => setLoadingDetail(false));
+  };
+
+  const openCreateForm = () => {
+    setShowEditor(true);
+    setSelected(null);
+    setDetailError(null);
+    setLoadingDetail(false);
+    setActiveSlug(null);
+  };
+
+  const handleInstructionCreated = (instruction: InstructionDetail) => {
+    setShowEditor(false);
+    setSummaries((prev) => {
+      const filtered = prev.filter((item) => item.id !== instruction.id);
+      const next = [instruction, ...filtered];
+      return next.sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      );
+    });
+    setSelected(instruction);
+    setActiveSlug(instruction.slug);
+    setDetailError(null);
+    setLoadingDetail(false);
   };
 
   return (
@@ -79,11 +107,16 @@ function App() {
       <main className="layout">
         <section className="catalog" aria-label="Каталог инструкций">
           <header className="catalog__header">
-            <h2>Руководства</h2>
-            <p>
-              Выберите тему, чтобы увидеть подробный туториал, кодовые примеры и дополнительные ресурсы — как на
-              W3Schools или MDN Learn.
-            </p>
+            <div>
+              <h2>Руководства</h2>
+              <p>
+                Выберите тему, чтобы увидеть подробный туториал, кодовые примеры и дополнительные ресурсы — как на
+                W3Schools или MDN Learn.
+              </p>
+            </div>
+            <button type="button" className="button button--primary" onClick={openCreateForm}>
+              Новая инструкция
+            </button>
           </header>
           {loadingCatalog && <div className="state">Загружаем каталог…</div>}
           {catalogError && !loadingCatalog && <div className="state state--error">{catalogError}</div>}
@@ -122,100 +155,104 @@ function App() {
           )}
         </section>
         <section className="details" aria-live="polite">
-          {loadingDetail && <div className="state">Готовим туториал…</div>}
-          {detailError && !loadingDetail && <div className="state state--error">{detailError}</div>}
-          {!loadingDetail && !detailError && selected && (
-            <article>
-              <header className="details__header">
-                <div className="details__category">
-                  <span className="details__icon" aria-hidden="true">
-                    {selected.category.icon}
-                  </span>
-                  <div>
-                    <h2>{selected.title}</h2>
-                    <p>{selected.category.title}</p>
-                  </div>
-                </div>
-                <div className="details__meta">
-                  <span className={`badge badge--${selected.difficulty}`}>
-                    {difficultyLabel(selected.difficulty)}
-                  </span>
-                  <span>{formatMinutes(selected.estimatedMinutes)}</span>
-                  <span>Обновлено: {new Date(selected.updatedAt).toLocaleDateString()}</span>
-                </div>
-                <ul className="details__tags">
-                  {selected.tags.map((tag) => (
-                    <li key={tag}>#{tag}</li>
-                  ))}
-                </ul>
-              </header>
-              <section className="details__intro">
-                {selected.introduction.split('\n').map((paragraph, index) => (
-                  <p key={index}>{paragraph}</p>
-                ))}
-                {selected.prerequisites && (
-                  <aside className="details__prerequisites">
-                    <strong>Предварительно подготовьте:</strong>
-                    <p>{selected.prerequisites}</p>
-                  </aside>
-                )}
-              </section>
-              <section className="details__sections">
-                <h3>Шаги</h3>
-                <ol>
-                  {selected.sections.map((section) => (
-                    <li key={section.id}>
-                      <article className="details__section">
-                        <h4>{section.title}</h4>
-                        {section.content.split('\n').map((paragraph, index) => (
-                          <p key={index}>{paragraph}</p>
-                        ))}
-                        {section.codeSnippet && (
-                          <div className="details__code">
-                            {section.codeTitle && <div className="details__code-title">{section.codeTitle}</div>}
-                            <pre>
-                              <code>{section.codeSnippet}</code>
-                            </pre>
-                            {section.codeLanguage && (
-                              <span className="details__code-language">{section.codeLanguage}</span>
+          {showEditor ? (
+            <InstructionForm onCreated={handleInstructionCreated} onCancel={() => setShowEditor(false)} />
+          ) : (
+            <>
+              {loadingDetail && <div className="state">Готовим туториал…</div>}
+              {detailError && !loadingDetail && <div className="state state--error">{detailError}</div>}
+              {!loadingDetail && !detailError && selected && (
+                <article>
+                  <header className="details__header">
+                    <div className="details__category">
+                      <span className="details__icon" aria-hidden="true">
+                        {selected.category.icon}
+                      </span>
+                      <div>
+                        <h2>{selected.title}</h2>
+                        <p>{selected.category.title}</p>
+                      </div>
+                    </div>
+                    <div className="details__meta">
+                      <span className={`badge badge--${selected.difficulty}`}>
+                        {difficultyLabel(selected.difficulty)}
+                      </span>
+                      <span>{formatMinutes(selected.estimatedMinutes)}</span>
+                      <span>Обновлено: {new Date(selected.updatedAt).toLocaleDateString()}</span>
+                    </div>
+                    <ul className="details__tags">
+                      {selected.tags.map((tag) => (
+                        <li key={tag}>#{tag}</li>
+                      ))}
+                    </ul>
+                  </header>
+                  <section className="details__intro markdown-body">
+                    <ReactMarkdown>{selected.introduction}</ReactMarkdown>
+                    {selected.prerequisites && (
+                      <aside className="details__prerequisites">
+                        <strong>Предварительно подготовьте:</strong>
+                        <p>{selected.prerequisites}</p>
+                      </aside>
+                    )}
+                  </section>
+                  <section className="details__sections">
+                    <h3>Шаги</h3>
+                    <ol>
+                      {selected.sections.map((section) => (
+                        <li key={section.id}>
+                          <article className="details__section">
+                            <h4>{section.title}</h4>
+                            <div className="details__section-content markdown-body">
+                              <ReactMarkdown>{section.content}</ReactMarkdown>
+                            </div>
+                            {section.codeSnippet && (
+                              <div className="details__code">
+                                {section.codeTitle && <div className="details__code-title">{section.codeTitle}</div>}
+                                <pre>
+                                  <code>{section.codeSnippet}</code>
+                                </pre>
+                                {section.codeLanguage && (
+                                  <span className="details__code-language">{section.codeLanguage}</span>
+                                )}
+                              </div>
                             )}
-                          </div>
-                        )}
-                        {section.ctaLabel && section.ctaUrl && (
-                          <a
-                            className="details__cta"
-                            href={section.ctaUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {section.ctaLabel}
-                          </a>
-                        )}
-                      </article>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-              {selected.resources.length > 0 && (
-                <section className="details__resources">
-                  <h3>Дополнительные материалы</h3>
-                  <ul>
-                    {selected.resources.map((resource) => (
-                      <li key={resource.id}>
-                        <a href={resource.url} target="_blank" rel="noreferrer">
-                          <span className={`badge badge--neutral`}>{resource.type}</span>
-                          <span className="details__resource-title">{resource.title}</span>
-                          <span className="details__resource-description">{resource.description}</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
+                            {section.ctaLabel && section.ctaUrl && (
+                              <a
+                                className="details__cta"
+                                href={section.ctaUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {section.ctaLabel}
+                              </a>
+                            )}
+                          </article>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                  {selected.resources.length > 0 && (
+                    <section className="details__resources">
+                      <h3>Дополнительные материалы</h3>
+                      <ul>
+                        {selected.resources.map((resource) => (
+                          <li key={resource.id}>
+                            <a href={resource.url} target="_blank" rel="noreferrer">
+                              <span className={`badge badge--neutral`}>{resource.type}</span>
+                              <span className="details__resource-title">{resource.title}</span>
+                              <span className="details__resource-description">{resource.description}</span>
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </article>
               )}
-            </article>
-          )}
-          {!loadingDetail && !detailError && !selected && !loadingCatalog && (
-            <div className="state">Выберите инструкцию слева, чтобы увидеть подробности.</div>
+              {!loadingDetail && !detailError && !selected && !loadingCatalog && (
+                <div className="state">Выберите инструкцию слева, чтобы увидеть подробности.</div>
+              )}
+            </>
           )}
         </section>
       </main>
