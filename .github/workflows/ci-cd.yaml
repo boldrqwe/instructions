@@ -89,54 +89,80 @@ jobs:
 
   deploy:
     name: Apply Kubernetes manifests
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted, linux, k8s, prod ]   # ← вместо ubuntu-latest
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
       IMAGE_TO_DEPLOY: ${{ needs.build.outputs['image-tag'] }}
+      KUBECONFIG_PATH: /root/.kube/config       # ← kubeconfig лежит на хосте раннера
+      K8S_NAMESPACE: apps
+      DEPLOYMENT_NAME: my-service
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Ставим kubectl подходящей версии.
+      # kubectl можно не ставить, если он уже есть на раннере.
+      # Оставлю установку на всякий случай — вреда не будет.
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
         with:
           version: 'v1.29.2'
 
-      # Пробрасываем kubeconfig из секретов GitHub.
-      - name: Configure kubeconfig
+      # Проверяем, что kubeconfig существует, и печатаем endpoint
+      - name: Check kubeconfig and cluster endpoint
         run: |
-          mkdir -p "$HOME/.kube"
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > "$HOME/.kube/config"
-          chmod 600 "$HOME/.kube/config"
+          if [[ ! -f "${KUBECONFIG_PATH}" ]]; then
+            echo "::error::KUBECONFIG not found at ${KUBECONFIG_PATH}"
+            exit 1
+          fi
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" version --client
+          EP=$(kubectl --kubeconfig "${KUBECONFIG_PATH}" config view --minify -o jsonpath='{.clusters[0].cluster.server}')
+          echo "Cluster endpoint: ${EP}"
 
-      # envsubst из пакета gettext нужен для шаблонов манифестов.
+      # Ждём доступности API, чтобы не падать на apply
+      - name: Wait for kube-api
+        run: |
+          end=$((SECONDS+60))
+          while (( SECONDS < end )); do
+            if kubectl --kubeconfig "${KUBECONFIG_PATH}" get --raw=/version >/dev/null 2>&1; then
+              echo "API is reachable"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::kube-api is not reachable"
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" cluster-info || true
+          exit 1
+
+      # envsubst для шаблонов
       - name: Install envsubst tool
         run: sudo apt-get update && sudo apt-get install -y gettext-base
 
-      # Рендерим манифесты, подставляя свежий тег образа.
+      # Рендер шаблонов c тегом образа
       - name: Render Kubernetes manifests
         env:
           IMAGE: ${{ env.IMAGE_TO_DEPLOY }}
         run: |
           envsubst < k8s/deployment.yaml.tpl > k8s/deployment.yaml
-          envsubst < k8s/service.yaml.tpl > k8s/service.yaml
-          echo "::group::Rendered deployment" && cat k8s/deployment.yaml && echo "::endgroup::"
-          echo "::group::Rendered service" && cat k8s/service.yaml && echo "::endgroup::"
+          envsubst < k8s/service.yaml.tpl    > k8s/service.yaml
+          echo "::group::Rendered deployment"; cat k8s/deployment.yaml; echo "::endgroup::"
+          echo "::group::Rendered service";    cat k8s/service.yaml;    echo "::endgroup::"
 
-      # Простая защита от отсутствующего namespace.
+      # Неймспейс
       - name: Ensure namespace exists
         run: |
-          kubectl create namespace ${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" create namespace "${K8S_NAMESPACE}" --dry-run=client -o yaml | \
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" apply -f -
 
-      # Применяем манифесты.
+      # Применяем
       - name: Apply manifests
         run: |
-          kubectl apply -n ${{ env.K8S_NAMESPACE }} -f k8s/deployment.yaml
-          kubectl apply -n ${{ env.K8S_NAMESPACE }} -f k8s/service.yaml
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/deployment.yaml
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" apply -f k8s/service.yaml
 
-      # И ждём, пока развёртывание обновится.
+      # Ждём rollout
       - name: Wait for rollout
         run: |
-          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n ${{ env.K8S_NAMESPACE }}
+          kubectl --kubeconfig "${KUBECONFIG_PATH}" -n "${K8S_NAMESPACE}" rollout status "deployment/${{ env.DEPLOYMENT_NAME }}"
+ 
