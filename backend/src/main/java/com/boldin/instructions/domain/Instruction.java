@@ -22,11 +22,21 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "instructions", uniqueConstraints = {
         @UniqueConstraint(columnNames = "slug")
@@ -35,6 +45,7 @@ public class Instruction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Setter(AccessLevel.NONE)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -68,24 +79,27 @@ public class Instruction {
     @CollectionTable(name = "instruction_tags", joinColumns = @JoinColumn(name = "instruction_id"))
     @Column(name = "tag", length = 64, nullable = false)
     @OrderColumn(name = "tag_order")
+    @Setter(AccessLevel.NONE)
     private List<String> tags = new ArrayList<>();
 
     @OneToMany(mappedBy = "instruction", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
+    @Setter(AccessLevel.NONE)
     private List<InstructionSection> sections = new ArrayList<>();
 
     @OneToMany(mappedBy = "instruction", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
-    private List<InstructionResource> resources = new ArrayList<>();
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private Set<InstructionResource> resources = new LinkedHashSet<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Setter(AccessLevel.NONE)
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
+    @Setter(AccessLevel.NONE)
     private Instant updatedAt;
-
-    public Instruction() {
-    }
 
     @PrePersist
     public void prePersist() {
@@ -99,87 +113,11 @@ public class Instruction {
         updatedAt = Instant.now();
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public InstructionCategory getCategory() {
-        return category;
-    }
-
-    public void setCategory(InstructionCategory category) {
-        this.category = category;
-    }
-
-    public String getSlug() {
-        return slug;
-    }
-
-    public void setSlug(String slug) {
-        this.slug = slug;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getSummary() {
-        return summary;
-    }
-
-    public void setSummary(String summary) {
-        this.summary = summary;
-    }
-
-    public String getIntroduction() {
-        return introduction;
-    }
-
-    public void setIntroduction(String introduction) {
-        this.introduction = introduction;
-    }
-
-    public InstructionDifficulty getDifficulty() {
-        return difficulty;
-    }
-
-    public void setDifficulty(InstructionDifficulty difficulty) {
-        this.difficulty = difficulty;
-    }
-
-    public int getEstimatedMinutes() {
-        return estimatedMinutes;
-    }
-
-    public void setEstimatedMinutes(int estimatedMinutes) {
-        this.estimatedMinutes = estimatedMinutes;
-    }
-
-    public String getPrerequisites() {
-        return prerequisites;
-    }
-
-    public void setPrerequisites(String prerequisites) {
-        this.prerequisites = prerequisites;
-    }
-
-    public List<String> getTags() {
-        return tags;
-    }
-
     public void setTags(List<String> tags) {
         this.tags.clear();
         if (tags != null) {
             this.tags.addAll(tags);
         }
-    }
-
-    public List<InstructionSection> getSections() {
-        return sections;
     }
 
     public void setSections(List<InstructionSection> sections) {
@@ -193,7 +131,7 @@ public class Instruction {
     }
 
     public List<InstructionResource> getResources() {
-        return resources;
+        return List.copyOf(resources);
     }
 
     public void setResources(List<InstructionResource> resources) {
@@ -204,13 +142,5 @@ public class Instruction {
                 this.resources.add(resource);
             }
         }
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
     }
 }
