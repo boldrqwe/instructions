@@ -15,38 +15,52 @@ spec:
       labels:
         app: my-service
     spec:
-      # ① если приватный GHCR — пусть поды сами знают секрет
       imagePullSecrets:
         - name: ghcr-creds
-
-      # ② initContainer подготовит папку /app/logs
-      initContainers:
-        - name: prepare-logs
-          image: busybox:1.36
-          command: ["sh","-c","mkdir -p /app/logs && chmod 0777 /app/logs"]
-          volumeMounts:
-            - name: logs
-              mountPath: /app/logs
-
       containers:
         - name: my-service
           image: ${IMAGE}
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
-          # твои requests/limits/пробы оставь как были
-          # livenessProbe/readinessProbe уже есть в твоём манифесте
+            - name: http
+              containerPort: 8080
           envFrom:
             - configMapRef:
                 name: my-service-config
-                optional: false
             - secretRef:
                 name: my-service-secrets
-                optional: false
+          env:
+            - name: LOGGING_CONFIG
+              value: file:/config/logback-console.xml
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 15
+            timeoutSeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            timeoutSeconds: 2
+            periodSeconds: 10
           volumeMounts:
-            - name: logs
-              mountPath: /app/logs
-
-      # ③ сам том для логов (эпhemeral)
+            - name: logback
+              mountPath: /config
+              readOnly: true
       volumes:
-        - name: logs
-          emptyDir: {}
+        - name: logback
+          configMap:
+            name: my-service-logback
+            items:
+              - key: logback-console.xml
+                path: logback-console.xml

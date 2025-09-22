@@ -1,15 +1,15 @@
-# k8s/service.yaml
-apiVersion: v1                               # Service: https://k8s.io/docs/concepts/services-networking/service/
+apiVersion: v1
 kind: Service
 metadata:
   name: my-service
   namespace: apps
 spec:
-  selector:                                   # Какие поды балансировать
+  selector:
     app: my-service
   ports:
     - name: http
-      port: 80                                  # Порт сервиса
-      targetPort: 8080                          # Порт контейнера
+      port: 80
+      targetPort: 8080
+      nodePort: 30080
       protocol: TCP
-  type: ClusterIP                             # Внутрикластерный доступ (внешний — через Ingress/LoadBalancer)
+  type: NodePort
