@@ -64,6 +64,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Настраиваем отдельного билдера, чтобы работали BuildKit и GHA-кэш.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       # Собираем Docker-образ. На PR просто проверяем, что сборка проходит, а на main ещё и пушим.
       - name: Build backend image
         id: build-image
