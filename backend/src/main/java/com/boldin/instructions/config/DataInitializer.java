@@ -12,6 +12,7 @@ public class DataInitializer {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
+
     @Bean
     CommandLineRunner seedInstructions(InstructionService service) {
         return args -> {
