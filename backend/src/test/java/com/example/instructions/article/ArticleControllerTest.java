@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -45,6 +46,7 @@ class ArticleControllerTest {
         ArticleRequest request = new ArticleRequest("Новая инструкция", "<p>Содержимое</p>");
 
         MvcResult result = mockMvc.perform(post("/api/articles")
+                        .with(httpBasic("admin", "admin123321"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -70,6 +72,7 @@ class ArticleControllerTest {
         ArticleRequest invalidRequest = new ArticleRequest("", "");
 
         mockMvc.perform(post("/api/articles")
+                        .with(httpBasic("admin", "admin123321"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
@@ -82,6 +85,7 @@ class ArticleControllerTest {
         ArticleRequest request = new ArticleRequest("Обновлённый заголовок", "<p>Обновлённое содержимое</p>");
 
         mockMvc.perform(put("/api/articles/{id}", saved.getId())
+                        .with(httpBasic("admin", "admin123321"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -96,7 +100,8 @@ class ArticleControllerTest {
     void shouldDeleteArticle() throws Exception {
         Article saved = articleRepository.save(new Article("Удаляемая", "<p>Текст</p>"));
 
-        mockMvc.perform(delete("/api/articles/{id}", saved.getId()))
+        mockMvc.perform(delete("/api/articles/{id}", saved.getId())
+                        .with(httpBasic("admin", "admin123321")))
                 .andExpect(status().isNoContent());
 
         assertThat(articleRepository.existsById(saved.getId())).isFalse();
