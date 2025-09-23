@@ -1,30 +1,58 @@
-.app {
+.admin-editor {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-.app__header {
+.admin-editor__header {
   padding: 2.5rem 3rem 1.5rem;
   background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
   color: #fff;
   box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
 }
 
-.app__header h1 {
+.admin-editor__title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-editor__header h1 {
   margin: 0;
   font-size: clamp(2rem, 4vw, 2.8rem);
   font-weight: 700;
 }
 
-.app__subtitle {
-  margin: 0.75rem 0 0;
+.admin-editor__subtitle {
+  margin: 0;
   max-width: 640px;
   font-size: 1.05rem;
   color: rgba(255, 255, 255, 0.85);
 }
 
-.app__content {
+.admin-editor__logout {
+  align-self: flex-start;
+  border: none;
+  background: rgba(15, 23, 42, 0.2);
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-editor__logout:hover {
+  background: rgba(15, 23, 42, 0.32);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
+}
+
+.admin-editor__content {
   flex: 1;
   padding: 2rem 3rem 3rem;
   display: grid;
@@ -285,7 +313,7 @@
 }
 
 @media (max-width: 1080px) {
-  .app__content {
+  .admin-editor__content {
     grid-template-columns: 1fr;
   }
 
@@ -299,11 +327,18 @@
 }
 
 @media (max-width: 720px) {
-  .app__header {
+  .admin-editor__header {
     padding: 2rem 1.5rem 1rem;
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .app__content {
+  .admin-editor__logout {
+    align-self: stretch;
+    text-align: center;
+  }
+
+  .admin-editor__content {
     padding: 1.5rem;
   }
 
