@@ -28,3 +28,7 @@ logging:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  security:
+    editor:
+      username: ${APP_EDITOR_USERNAME:editor}
+      password: ${APP_EDITOR_PASSWORD:password}

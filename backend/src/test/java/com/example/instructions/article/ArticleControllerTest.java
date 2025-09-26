@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -45,6 +46,7 @@ class ArticleControllerTest {
         ArticleRequest request = new ArticleRequest("Новая инструкция", "<p>Содержимое</p>");
 
         MvcResult result = mockMvc.perform(post("/api/articles")
+                        .with(httpBasic("editor", "password"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -70,10 +72,21 @@ class ArticleControllerTest {
         ArticleRequest invalidRequest = new ArticleRequest("", "");
 
         mockMvc.perform(post("/api/articles")
+                        .with(httpBasic("editor", "password"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Данные заполнены некорректно"));
+    }
+
+    @Test
+    void shouldRejectUnauthorizedCreation() throws Exception {
+        ArticleRequest request = new ArticleRequest("Без доступа", "<p>Контент</p>");
+
+        mockMvc.perform(post("/api/articles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
