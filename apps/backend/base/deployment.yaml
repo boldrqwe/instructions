@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: backend
+      app: api
   template:
     metadata:
       labels:
-        app: backend
+        app: api
     spec:
       containers:
-        - name: backend
-          image: backend:latest
+        - name: api
+          image: ghcr.io/boldrqwe/instructions_backend:latest
           ports:
             - containerPort: 8080
           env:
