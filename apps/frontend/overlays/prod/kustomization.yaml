@@ -1,12 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namePrefix: prod-
 namespace: prod
 resources:
   - ../../base
+  - ingress.yaml
 patchesStrategicMerge:
   - patch-deployment.yaml
-  - patch-ingress.yaml
+  - ../../shared/patch-security.yaml
 images:
-  - name: frontend
-    newName: ghcr.io/boldrqwe/frontend
+  - name: ghcr.io/boldrqwe/instructions_front
+    newName: ghcr.io/boldrqwe/instructions_front
     newTag: latest

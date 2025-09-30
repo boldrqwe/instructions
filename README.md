@@ -23,14 +23,14 @@ infra/argocd/  # дополнительные объекты Argo CD (проек
 
 ### Backend / Frontend
 
-Базовые директории (`apps/<component>/base`) содержат Deployment, Service и Ingress с
+Базовые директории (`apps/<component>/base`) содержат Deployment и Service с
 минимальными параметрами. В `overlays/test` и `overlays/prod` задаются namespace,
-количество реплик и ingress-хосты. Сами образы меняются через секцию `images` в
-`kustomization.yaml`.
+количество реплик, а также Ingress с маршрутизацией по путям. Сами образы меняются
+через секцию `images` в `kustomization.yaml`.
 
 - Backend слушает порт `8080`, использует секрет `db-auth` и переменные `DB_*` для
   подключения к БД. В обоих окружениях развёрнута 1 реплика.
-- Frontend слушает порт `80`, имеет `readinessProbe` на `/`. В `test` — 1 реплика,
+- Frontend слушает порт `8080`, имеет `readinessProbe` на `/`. В `test` — 1 реплика,
   в `prod` — 2 реплики.
 
 ### База данных
@@ -39,12 +39,22 @@ infra/argocd/  # дополнительные объекты Argo CD (проек
 который разворачивает Bitnami PostgreSQL (release `postgres`) с переопределением имени
 сервиса (`fullnameOverride: postgres`). Бэкенд подключается к сервису `postgres:5432`.
 
+## Сетевая схема
+
+Для каждого окружения используется один домен:
+
+- `test.79.174.84.176.sslip.io`
+- `site.79.174.84.176.sslip.io`
+
+Ingress во фронтовых оверлеях проксирует `/` на сервис фронтенда (`*-web`) и `/api`
+на сервис бэкенда (`*-api`).
+
 ## Настройка образов
 
-По умолчанию в overlays используются плейсхолдеры:
+По умолчанию в overlays используются образы из GHCR:
 
-- Backend: `ghcr.io/boldrqwe/backend:latest`
-- Frontend: `ghcr.io/boldrqwe/frontend:latest`
+- Backend: `ghcr.io/boldrqwe/instructions_backend:latest`
+- Frontend: `ghcr.io/boldrqwe/instructions_front:latest`
 
 Чтобы заменить образы, отредактируйте `images` в файлах:
 
@@ -57,8 +67,8 @@ infra/argocd/  # дополнительные объекты Argo CD (проек
 
 ```yaml
 images:
-  - name: backend
-    newName: ghcr.io/boldrqwe/backend
+  - name: ghcr.io/boldrqwe/instructions_backend
+    newName: ghcr.io/boldrqwe/instructions_backend
     newTag: v1.2.3
 ```
 
@@ -99,10 +109,8 @@ primary:
 2. Аналогично создайте приложение `env-prod`, указав Path `clusters/prod`.
 
 Корневые приложения синхронизируют дочерние Applications (`db`, `backend`, `frontend`).
-После синхронизации сервисы будут доступны по хостам:
-
-- Test: `test.79.174.84.176.sslip.io` (frontend), `api-test.79.174.84.176.sslip.io` (backend)
-- Prod: `app.79.174.84.176.sslip.io` (frontend), `api.79.174.84.176.sslip.io` (backend)
+После синхронизации сервисы будут доступны по доменам окружений, где `/` обслуживает
+SPA, а `/api` — REST API.
 
 ## Проверка манифестов
 
