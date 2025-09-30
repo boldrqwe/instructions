@@ -1,118 +1,128 @@
-# Instructions
+# GitOps манифесты для инструкций
 
-Полноценный пример приложения для публикации и редактирования инструкций.
-Бэкенд реализован на Spring Boot, данные хранятся в PostgreSQL. Фронтенд
-создан на React + TypeScript и использует богатый текстовый редактор
-(react-quill), позволяющий форматировать статьи перед сохранением.
+Репозиторий содержит Kubernetes-манифесты для развёртывания приложения "Instructions"
+в двух окружениях (`test` и `prod`) через Argo CD. В каждом окружении поднимаются три
+компонента:
 
-## Состав проекта
+- PostgreSQL из Helm-чарта Bitnami;
+- backend (Spring Boot API);
+- frontend (React SPA).
 
-- `backend` — REST API на Spring Boot 3 (Java 17, Spring Data JPA, Bean Validation).
-- `frontend` — одностраничное приложение на Vite + React + TypeScript.
-- `docker-compose.yml` — инфраструктура из PostgreSQL, бэкенда и собранного фронтенда.
+## Структура репозитория
 
-## Запуск локально
+```
+clusters/
+  test/        # корневой Application (app-of-apps) и дочерние Applications для test
+  prod/        # корневой Application (app-of-apps) и дочерние Applications для prod
+apps/
+  backend/     # base + overlays для backend
+  frontend/    # base + overlays для frontend
+  db/          # overlays с секретами и Argo CD Applications на PostgreSQL
+infra/argocd/  # дополнительные объекты Argo CD (проекты и т.п.)
+```
 
-### Backend
+### Backend / Frontend
+
+Базовые директории (`apps/<component>/base`) содержат Deployment и Service с
+минимальными параметрами. В `overlays/test` и `overlays/prod` задаются namespace,
+количество реплик, а также Ingress с маршрутизацией по путям. Сами образы меняются
+через секцию `images` в `kustomization.yaml`.
+
+- Backend слушает порт `8080`, использует секрет `db-auth` и переменные `DB_*` для
+  подключения к БД. В обоих окружениях развёрнута 1 реплика.
+- Frontend слушает порт `8080`, имеет `readinessProbe` на `/`. В `test` — 1 реплика,
+  в `prod` — 2 реплики.
+
+### База данных
+
+В директории `apps/db/overlays/<env>` лежит секрет `db-auth` и Argo CD Application,
+который разворачивает Bitnami PostgreSQL (release `postgres`) с переопределением имени
+сервиса (`fullnameOverride: postgres`). Бэкенд подключается к сервису `postgres:5432`.
+
+## Сетевая схема
+
+Для каждого окружения используется один домен:
+
+- `test.79.174.84.176.sslip.io`
+- `site.79.174.84.176.sslip.io`
+
+Ingress во фронтовых оверлеях проксирует `/` на сервис фронтенда (`*-web`) и `/api`
+на сервис бэкенда (`*-api`).
+
+## Настройка образов
+
+По умолчанию в overlays используются образы из GHCR:
+
+- Backend: `ghcr.io/boldrqwe/instructions_backend:latest`
+- Frontend: `ghcr.io/boldrqwe/instructions_front:latest`
+
+Чтобы заменить образы, отредактируйте `images` в файлах:
+
+- `apps/backend/overlays/test/kustomization.yaml`
+- `apps/backend/overlays/prod/kustomization.yaml`
+- `apps/frontend/overlays/test/kustomization.yaml`
+- `apps/frontend/overlays/prod/kustomization.yaml`
+
+Например:
+
+```yaml
+images:
+  - name: ghcr.io/boldrqwe/instructions_backend
+    newName: ghcr.io/boldrqwe/instructions_backend
+    newTag: v1.2.3
+```
+
+## Настройка секретов БД
+
+Секрет `db-auth` содержит три ключа: `postgres-password`, `password` (для пользователя
+`app`) и `replication-password`. Значения должны быть в Base64. Для генерации можно
+воспользоваться `printf 'MyPassword' | base64`.
+
+Обновите файлы:
+
+- `apps/db/overlays/test/secret-db-auth.yaml`
+- `apps/db/overlays/prod/secret-db-auth.yaml`
+
+и замените плейсхолдеры на свои значения. Пароли в обоих окружениях могут отличаться.
+
+## Персистентность БД
+
+По умолчанию `primary.persistence.enabled=false`, чтобы можно было быстро стартовать без
+PVC. Для включения постоянного хранения в `prod` (или другом окружении) измените блок
+`primary.persistence` в `apps/db/overlays/prod/app-postgres.yaml`, например:
+
+```yaml
+primary:
+  persistence:
+    enabled: true
+    storageClass: <storage-class>
+    size: 10Gi
+```
+
+## Развёртывание через Argo CD
+
+1. В Argo CD UI создайте приложение `env-test`:
+   - Repo URL: `https://github.com/boldrqwe/k8s.git`
+   - Path: `clusters/test`
+   - Destination: выбранный кластер, namespace `argocd`
+   - Включите автоматическую синхронизацию (prune, self-heal) и опцию `Create Namespace`.
+2. Аналогично создайте приложение `env-prod`, указав Path `clusters/prod`.
+
+Корневые приложения синхронизируют дочерние Applications (`db`, `backend`, `frontend`).
+После синхронизации сервисы будут доступны по доменам окружений, где `/` обслуживает
+SPA, а `/api` — REST API.
+
+## Проверка манифестов
+
+Для локальной проверки соберите манифесты через Kustomize:
 
 ```bash
-cd backend
-mvn spring-boot:run
+kustomize build apps/backend/overlays/test
+kustomize build apps/backend/overlays/prod
+kustomize build apps/frontend/overlays/test
+kustomize build apps/frontend/overlays/prod
+kustomize build apps/db/overlays/test
+kustomize build apps/db/overlays/prod
 ```
 
-Доступные переменные окружения:
-
-- `DB_HOST` (по умолчанию `localhost`)
-- `DB_PORT` (по умолчанию `5432`)
-- `DB_NAME` (по умолчанию `instructions`)
-- `DB_USERNAME` (по умолчанию `postgres`)
-- `DB_PASSWORD` (по умолчанию `postgres`)
-- `CORS_ALLOWED_ORIGINS` (по умолчанию `http://localhost:5173`)
-
-При первом запуске создаются две демонстрационные статьи.
-REST API доступно по адресу `http://localhost:8080/api/articles`.
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-По умолчанию фронтенд отправляет запросы на `http://localhost:8080`.
-Можно переопределить адрес API, задав переменную `VITE_API_BASE_URL`.
-
-## Docker Compose
-
-Для проверки полного стека выполните:
-
-```bash
-docker compose up --build
-```
-
-Сервисы и порты:
-
-- PostgreSQL: `localhost:5432`
-- Backend: `http://localhost:8080`
-- Frontend: `http://localhost:3000`
-
-При необходимости можно переопределить переменные окружения Compose:
-`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `CORS_ALLOWED_ORIGINS`,
-`VITE_API_BASE_URL`.
-
-## Деплой на Railway / в Docker
-
-- Бэкенд имеет Dockerfile и запускается командой
-  `java $JAVA_OPTS -jar /app/app.jar`. Railway автоматически определит порт через переменную `PORT`.
-- Фронтенд собирается в статический бандл и отдаётся nginx. При сборке можно
-  переопределить `VITE_API_BASE_URL`, чтобы прописать URL REST API в бандл.
-- Для production-деплоя достаточно выполнить `docker build` для каждой части
-  или использовать `docker compose build`/`push`.
-
-## API
-
-| Метод | Маршрут                 | Описание                 |
-|-------|------------------------|--------------------------|
-| GET   | `/api/articles`        | Список всех статей       |
-| GET   | `/api/articles/{id}`   | Получение статьи по id   |
-| POST  | `/api/articles`        | Создание новой статьи    |
-| PUT   | `/api/articles/{id}`   | Обновление существующей  |
-| DELETE| `/api/articles/{id}`   | Удаление статьи          |
-
-Пример тела запроса:
-
-```json
-{
-  "title": "Как развернуть проект",
-  "content": "<p>Подробное описание с форматированием…</p>"
-}
-```
-
-Ошибки возвращаются в формате:
-
-```json
-{
-  "timestamp": "2024-03-19T12:00:00Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Данные заполнены некорректно",
-  "details": ["title: Заголовок обязателен"]
-}
-```
-
-## Тестирование
-
-- `mvn test` — интеграционные тесты REST API (используется H2 в режиме PostgreSQL).
-- `npm run lint` и `npm run build` — проверка фронтенда.
-
-## Структура фронтенда
-
-Интерфейс содержит панель со списком статей и редактор. Для текста доступно:
-заголовки, списки, выделение, цитаты, блоки кода, ссылки, изображения и видео.
-После сохранения статья обновляется в списке без перезагрузки страницы.
-
-## Скриншоты
-
-Фронтенд генерирует современный UI (см. директорию `frontend/src`). При необходимости
-можно подключить собственную тему или заменить редактор на другой.
+Все манифесты должны успешно генерироваться и соответствовать требованиям Kubernetes 1.24+.
