@@ -1,0 +1,378 @@
+openapi: 3.0.3
+info:
+  title: Instructions API
+  version: 0.1.0
+  description: >
+    API для длинных инструкций с оглавлением. Публичные эндпоинты для чтения,
+    приватные (ADMIN) для создания/редактирования и публикации.
+servers:
+  - url: /api/v1
+tags:
+  - name: public
+    description: Публичное чтение
+  - name: admin
+    description: Админка (требует роль ADMIN)
+
+security:
+  - bearerAuth: []
+
+paths:
+  /articles:
+    get:
+      tags: [public]
+      summary: Список статей
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [PUBLISHED, DRAFT] }
+          description: По умолчанию PUBLISHED
+        - in: query
+          name: query
+          schema: { type: string }
+          description: Поисковая строка (полнотекстовый поиск)
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 0, default: 0 }
+        - in: query
+          name: size
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Ок
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageArticleSummary'
+
+    post:
+      tags: [admin]
+      summary: Создать черновик статьи
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ArticleDraftCreate' }
+      responses:
+        '201':
+          description: Создано
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Article' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /articles/{slug}:
+    get:
+      tags: [public]
+      summary: Публичный просмотр опубликованной статьи по slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Ок
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Article' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /articles/{id}:
+    put:
+      tags: [admin]
+      summary: Обновить черновик статьи
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ArticleDraftUpdate' }
+      responses:
+        '200':
+          description: Ок
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Article' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /articles/{id}:publish:
+    post:
+      tags: [admin]
+      summary: Опубликовать статью (черновик -> опубликовано + ревизия)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Опубликовано
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Article' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Конфликт (например, не DRAFT)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /articles/{id}/toc:
+    get:
+      tags: [public]
+      summary: Оглавление статьи (главы/секции)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Ок
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Toc' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /chapters:
+    post:
+      tags: [admin]
+      summary: Создать главу (в черновик статьи)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChapterCreate' }
+      responses:
+        '201':
+          description: Создано
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Chapter' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /sections:
+    post:
+      tags: [admin]
+      summary: Создать секцию (параграф) в главе
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SectionCreate' }
+      responses:
+        '201':
+          description: Создано
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Section' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /search:
+    get:
+      tags: [public]
+      summary: Поиск по опубликованным статьям и секциям
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Ок
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PageSearchResult' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      # при интеграции с конкретным провайдером можно добавить openIdConnectUrl
+
+  responses:
+    Unauthorized:
+      description: Требуется аутентификация
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Нет прав
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Не найдено
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Id:
+      type: string
+      format: uuid
+
+    ArticleStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED]
+
+    ArticleSummary:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        title: { type: string }
+        slug: { type: string }
+        status: { $ref: '#/components/schemas/ArticleStatus' }
+        tags:
+          type: array
+          items: { type: string }
+        updatedAt: { type: string, format: date-time }
+
+    Article:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        title: { type: string }
+        slug: { type: string }
+        status: { $ref: '#/components/schemas/ArticleStatus' }
+        version: { type: integer, minimum: 1 }
+        chapters:
+          type: array
+          items: { $ref: '#/components/schemas/Chapter' }
+        tags:
+          type: array
+          items: { type: string }
+        createdBy: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ArticleDraftCreate:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        slug: { type: string, description: "Если не задан — генерируется" }
+        tags:
+          type: array
+          items: { type: string }
+
+    ArticleDraftUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        slug: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+
+    Chapter:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        articleId: { $ref: '#/components/schemas/Id' }
+        title: { type: string }
+        orderIndex: { type: integer, minimum: 0 }
+        sections:
+          type: array
+          items: { $ref: '#/components/schemas/Section' }
+
+    ChapterCreate:
+      type: object
+      required: [articleId, title, orderIndex]
+      properties:
+        articleId: { $ref: '#/components/schemas/Id' }
+        title: { type: string }
+        orderIndex: { type: integer, minimum: 0 }
+
+    Section:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        chapterId: { $ref: '#/components/schemas/Id' }
+        title: { type: string }
+        orderIndex: { type: integer, minimum: 0 }
+        markdown: { type: string }
+
+    SectionCreate:
+      type: object
+      required: [chapterId, title, orderIndex, markdown]
+      properties:
+        chapterId: { $ref: '#/components/schemas/Id' }
+        title: { type: string }
+        orderIndex: { type: integer, minimum: 0 }
+        markdown: { type: string }
+
+    Toc:
+      type: object
+      properties:
+        articleId: { $ref: '#/components/schemas/Id' }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              chapterId: { $ref: '#/components/schemas/Id' }
+              chapterTitle: { type: string }
+              sections:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    sectionId: { $ref: '#/components/schemas/Id' }
+                    sectionTitle: { type: string }
+
+    SearchResult:
+      type: object
+      properties:
+        type: { type: string, enum: [article, section] }
+        id: { $ref: '#/components/schemas/Id' }
+        title: { type: string }
+        snippet: { type: string }
+        slug: { type: string }
+
+    PageArticleSummary:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/ArticleSummary' }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer }
+
+    PageSearchResult:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/SearchResult' }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer }
+
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
