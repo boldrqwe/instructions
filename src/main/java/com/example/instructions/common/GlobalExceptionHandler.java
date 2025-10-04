@@ -1,68 +1,73 @@
 package com.example.instructions.common;
 
-import com.example.instructions.article.exception.ArticleNotFoundException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.springframework.http.HttpHeaders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-@RestControllerAdvice
-public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+/**
+ * Глобальный обработчик исключений, конвертирующий их в JSON-ответы.
+ */
+@ControllerAdvice
+public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(
-            MethodArgumentNotValidException ex,
-            HttpHeaders headers,
-            HttpStatus status,
-            WebRequest request
-    ) {
-        List<String> details = ex.getBindingResult().getFieldErrors().stream()
-                .map(GlobalExceptionHandler::formatFieldError)
-                .collect(Collectors.toList());
-
-        ApiError apiError = ApiError.of(status.value(), status.getReasonPhrase(), "Данные заполнены некорректно", details);
-        return new ResponseEntity<>(apiError, headers, status);
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNotFound(NotFoundException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler(ArticleNotFoundException.class)
-    public ResponseEntity<ApiError> handleArticleNotFound(ArticleNotFoundException ex) {
-        HttpStatus status = HttpStatus.NOT_FOUND;
-        return ResponseEntity.status(status)
-                .body(ApiError.of(status.value(), status.getReasonPhrase(), ex.getMessage()));
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleConflict(ConflictException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ErrorCode.CONFLICT, ex.getMessage());
     }
 
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiError> handleConstraintViolation(ConstraintViolationException ex) {
-        HttpStatus status = HttpStatus.BAD_REQUEST;
-        List<String> details = ex.getConstraintViolations().stream()
-                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
-                .collect(Collectors.toList());
-        return ResponseEntity.status(status)
-                .body(ApiError.of(status.value(), status.getReasonPhrase(), "Неверные параметры запроса", details));
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiErrorResponse> handleForbidden(ForbiddenException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, ErrorCode.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiErrorResponse> handleBadRequest(BadRequestException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
+    public ResponseEntity<ApiErrorResponse> handleValidation(Exception ex) {
+        List<String> messages;
+        if (ex instanceof MethodArgumentNotValidException manv) {
+            messages = manv.getBindingResult()
+                    .getFieldErrors()
+                    .stream()
+                    .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                    .collect(Collectors.toList());
+        } else if (ex instanceof BindException bind) {
+            messages = bind.getFieldErrors()
+                    .stream()
+                    .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                    .collect(Collectors.toList());
+        } else {
+            messages = List.of(ex.getMessage());
+        }
+        String message = String.join("; ", messages);
+        return buildResponse(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, message);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleUnknownError(Exception ex, HttpServletRequest request) {
-        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-        ApiError apiError = ApiError.of(
-                status.value(),
-                status.getReasonPhrase(),
-                "Неожиданная ошибка. Попробуйте повторить запрос позже.",
-                List.of("Путь: " + request.getRequestURI())
-        );
-        return ResponseEntity.status(status).body(apiError);
+    public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception ex) {
+        log.error("Непредвиденная ошибка", ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.INTERNAL_ERROR,
+                "Внутренняя ошибка сервера");
     }
 
-    private static String formatFieldError(FieldError error) {
-        return "%s: %s".formatted(error.getField(), error.getDefaultMessage());
+    private ResponseEntity<ApiErrorResponse> buildResponse(HttpStatus status, ErrorCode code, String message) {
+        return ResponseEntity.status(status).body(new ApiErrorResponse(code, message));
     }
 }
