@@ -19,19 +19,29 @@ jobs:
   build-push:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: docker/login-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v6
+      - name: Build and push image
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
+          no-cache: true                   # 🚀 ключевая строка — отключает Docker кэш
+          pull: true                       # ⚙️ всегда тянет свежие базовые образы
           tags: |
             ${{ env.IMAGE }}:pr-latest
             ${{ env.IMAGE }}:pr-${{ github.event.number }}-${{ github.sha }}
 
+      - name: Display pushed images
+        run: |
+          echo "✅ Successfully pushed:"
+          echo " - ${{ env.IMAGE }}:pr-latest"
+          echo " - ${{ env.IMAGE }}:pr-${{ github.event.number }}-${{ github.sha }}"
