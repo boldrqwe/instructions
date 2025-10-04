@@ -8,17 +8,22 @@ spring:
     password: instructions
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate.jdbc.time_zone: UTC
   flyway:
-    enabled: true
+    baseline-on-migrate: true
+    clean-disabled: false
+    validate-on-migrate: false
     locations: classpath:db/migration
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://localhost/realms/demo
+
+
+
 
 logging:
   level:
