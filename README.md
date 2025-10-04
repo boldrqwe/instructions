@@ -18,8 +18,24 @@
 - OpenAPI (springdoc)
 - Логи JSON, метрики/трейсинг (OTel) — интеграция на следующих итерациях
 
-## Запуск локально (черновик)
-- `./mvnw spring-boot:run` (нужна локальная Postgres) или с Testcontainers профилем.
-- См. `application.yml` и `/docs/backend/persistence.md`.
+## Запуск локально
+1. Поднимите PostgreSQL 15 (пример через Docker):
+   ```bash
+   docker run --rm -p 5432:5432 -e POSTGRES_DB=instructions -e POSTGRES_USER=instructions -e POSTGRES_PASSWORD=instructions postgres:15-alpine
+   ```
+2. Примените миграции и соберите проект:
+   ```bash
+   ./mvnw clean test
+   ```
+3. Запустите приложение:
+   ```bash
+   ./mvnw spring-boot:run
+   ```
+4. Swagger UI доступен по адресу `http://localhost:8080/swagger-ui.html`.
+
+### Полезные команды
+- `./mvnw test` — юнит и интеграционные тесты (PostgreSQL через Testcontainers).
+- `./mvnw spring-boot:run` — запуск приложения.
+- `./mvnw -DskipTests package` — сборка jar без тестов.
 
 Любые изменения контракта API делаются **только** через ADR и правку `/docs/api/openapi.yaml`.
