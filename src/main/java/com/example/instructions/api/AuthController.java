@@ -1,5 +1,6 @@
 package com.example.instructions.api;
 
+import com.example.instructions.common.ForbiddenException;
 import com.example.instructions.security.JwtTokenService;
 import com.example.instructions.security.JwtTokenService.TokenResponse;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,10 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ForbiddenException("Требуется базовая аутентификация");
+        }
+
         TokenResponse response = jwtTokenService.generateToken(authentication);
         return ResponseEntity.ok(response);
     }
