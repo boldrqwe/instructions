@@ -1,6 +1,8 @@
 package com.example.instructions.security;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -70,7 +72,29 @@ public class SecurityConfig {
     }
 
     private SecretKey secretKey(JwtProperties jwtProperties) {
-        return new SecretKeySpec(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        byte[] secretBytes = deriveSecret(jwtProperties);
+        if (log.isDebugEnabled()) {
+            log.debug("Derived JWT secret length: {} bytes", secretBytes.length);
+        }
+        return new SecretKeySpec(secretBytes, "HmacSHA256");
+    }
+
+    private byte[] deriveSecret(JwtProperties jwtProperties) {
+        byte[] secretBytes = jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length < 32) {
+            secretBytes = sha256(secretBytes);
+            log.warn("JWT secret is shorter than 32 bytes. Using SHA-256 hash to derive signing key");
+        }
+        return secretBytes;
+    }
+
+    private byte[] sha256(byte[] value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return digest.digest(value);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 algorithm is not available", ex);
+        }
     }
 
     @Bean
