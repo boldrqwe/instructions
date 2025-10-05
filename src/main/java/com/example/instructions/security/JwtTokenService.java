@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -42,7 +44,8 @@ public class JwtTokenService {
                 .claim("roles", roles)
                 .build();
 
-        Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(claims));
+        JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256).build();
+        Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims));
 
         return new TokenResponse(jwt.getTokenValue(), "Bearer", expiresAt);
     }
