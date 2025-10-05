@@ -25,7 +25,9 @@ public class JwtTokenService {
         Instant issuedAt = Instant.now();
         Instant expiresAt = issuedAt.plus(jwtProperties.getAccessTokenTtl());
 
-        List<String> roles = authentication.getAuthorities().stream()
+        List<String> roles = authentication.getAuthorities() == null
+                ? List.of()
+                : authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .map(authority -> authority.startsWith("ROLE_") ? authority.substring(5) : authority)
                 .map(String::toUpperCase)
