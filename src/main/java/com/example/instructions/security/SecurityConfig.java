@@ -36,17 +36,21 @@ public class SecurityConfig {
         converter.setJwtGrantedAuthoritiesConverter(new JwtRoleConverter());
 
         http.csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(registry -> registry
+                .authorizeHttpRequests(reg -> reg
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/articles", "/api/v1/articles/*", "/api/v1/search")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/articles/*/toc")
-                        .permitAll()
-                        .anyRequest().hasRole("ADMIN"))
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()   // ✅ открыть логин
+                        .requestMatchers(HttpMethod.GET, "/api/v1/articles", "/api/v1/articles/*", "/api/v1/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/articles/*/toc").permitAll()
+                        .requestMatchers("/api/v1/auth/me", "/api/v1/auth/logout").permitAll() // опционально
+                        .anyRequest().hasRole("ADMIN")
+                )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))
                 .httpBasic(Customizer.withDefaults());
+
+        // 🔹 добавить return
         return http.build();
     }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
