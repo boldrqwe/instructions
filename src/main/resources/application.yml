@@ -24,8 +24,6 @@ spring:
           issuer-uri: http://localhost/realms/demo
 
 
-
-
 logging:
   level:
     root: INFO
