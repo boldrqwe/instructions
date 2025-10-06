@@ -9,5 +9,6 @@ public enum ErrorCode {
     FORBIDDEN,
     BAD_REQUEST,
     VALIDATION_FAILED,
-    INTERNAL_ERROR
+    INTERNAL_ERROR,
+    TOO_MANY_REQUESTS
 }

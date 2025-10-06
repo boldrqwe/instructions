@@ -39,3 +39,41 @@
 - `./mvnw -DskipTests package` — сборка jar без тестов.
 
 Любые изменения контракта API делаются **только** через ADR и правку `/docs/api/openapi.yaml`.
+
+### REST API
+
+#### Статьи
+
+- `POST /api/v1/articles` — создание черновика (ROLE_ADMIN). Пример:
+
+  ```bash
+  curl -X POST http://localhost:8080/api/v1/articles \
+    -H "Authorization: Bearer <token>" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "title": "Новый гид",
+      "summary": "Краткое описание",
+      "contentHtml": "<p>HTML контент</p>",
+      "contentJson": {"blocks": []},
+      "tags": ["postgres", "spring"]
+    }'
+  ```
+
+- `PUT /api/v1/articles/{id}` — редактирование черновика (ROLE_ADMIN).
+- `POST /api/v1/articles/{id}/publish` — публикация (ROLE_ADMIN).
+- `POST /api/v1/articles/{id}/unpublish` — возврат в черновик (ROLE_ADMIN).
+- `GET /api/v1/articles?status=&query=&page=&size=&authorId=` — поиск и пагинация. Без токена возвращаются только опубликованные статьи.
+- `GET /api/v1/articles/{id}` — просмотр статьи по ID (ROLE_ADMIN).
+- `GET /api/v1/articles/by-slug/{slug}` — публичный просмотр опубликованной статьи.
+
+#### Загрузка изображений
+
+- `POST /api/v1/uploads/images` — загрузка файла (ROLE_ADMIN, rate limit 20/min на пользователя). Файл сохраняется в `./uploads/images/YYYY/MM/DD/<uuid>.<ext>`, URL ответа можно отдавать фронтенду.
+
+  ```bash
+  curl -X POST http://localhost:8080/api/v1/uploads/images \
+    -H "Authorization: Bearer <token>" \
+    -F "file=@cover.png"
+  ```
+
+Статика из каталога `./uploads` раздается по пути `/uploads/**`.
