@@ -48,11 +48,11 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(registry -> registry
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/articles", "/api/v1/articles/*", "/api/v1/search")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/articles/*/toc")
-                        .permitAll()
-                        .anyRequest().hasRole("ADMIN"))
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/articles", "/api/v1/articles/*", "/api/v1/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/articles/*/toc").permitAll()
+                        .anyRequest().hasRole("ADMIN")
+                )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.decoder(jwtDecoder).jwtAuthenticationConverter(converter)))
                 .httpBasic(Customizer.withDefaults());

@@ -1,25 +1,27 @@
-package com.example.instructions.api;
+package com.example.instructions.api.dto;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * Запрос на создание главы.
+ * DTO главы.
  */
-public class ChapterCreateRequest {
+public class ChapterDto {
 
-    @NotNull
+    private UUID id;
     private UUID articleId;
-
-    @NotBlank
-    @Size(max = 512)
     private String title;
-
-    @Min(0)
     private int orderIndex;
+    private List<SectionDto> sections = new ArrayList<>();
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
 
     public UUID getArticleId() {
         return articleId;
@@ -43,5 +45,13 @@ public class ChapterCreateRequest {
 
     public void setOrderIndex(int orderIndex) {
         this.orderIndex = orderIndex;
+    }
+
+    public List<SectionDto> getSections() {
+        return sections;
+    }
+
+    public void setSections(List<SectionDto> sections) {
+        this.sections = sections;
     }
 }

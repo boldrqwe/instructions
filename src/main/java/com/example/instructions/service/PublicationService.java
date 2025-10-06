@@ -1,7 +1,7 @@
 package com.example.instructions.service;
 
-import com.example.instructions.api.ArticleDto;
-import com.example.instructions.api.ArticleMapper;
+import com.example.instructions.api.dto.ArticleDto;
+import com.example.instructions.api.mapper.ArticleMapper;
 import com.example.instructions.common.ConflictException;
 import com.example.instructions.common.NotFoundException;
 import com.example.instructions.domain.Article;

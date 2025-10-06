@@ -1,7 +1,7 @@
 package com.example.instructions.service;
 
-import com.example.instructions.api.SearchResultDto;
-import com.example.instructions.api.SearchResultType;
+import com.example.instructions.api.dto.SearchResultDto;
+import com.example.instructions.api.enums.SearchResultType;
 import com.example.instructions.common.PageResponse;
 import com.example.instructions.search.SearchRepository;
 import com.example.instructions.search.SearchResultProjection;

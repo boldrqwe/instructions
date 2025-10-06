@@ -1,4 +1,6 @@
-package com.example.instructions.api;
+package com.example.instructions.api.dto;
+
+import com.example.instructions.api.enums.SearchResultType;
 
 import java.util.UUID;
 

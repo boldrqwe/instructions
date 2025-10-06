@@ -1,4 +1,4 @@
-package com.example.instructions.api;
+package com.example.instructions.api.dto;
 
 import java.util.UUID;
 

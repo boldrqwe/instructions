@@ -1,5 +1,6 @@
-package com.example.instructions.api;
+package com.example.instructions.api.controller;
 
+import com.example.instructions.api.dto.SearchResultDto;
 import com.example.instructions.common.PageResponse;
 import com.example.instructions.service.SearchService;
 import jakarta.validation.constraints.Min;

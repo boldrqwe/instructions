@@ -1,4 +1,4 @@
-package com.example.instructions.api;
+package com.example.instructions.api.dto;
 
 import com.example.instructions.domain.ArticleStatus;
 import java.time.OffsetDateTime;

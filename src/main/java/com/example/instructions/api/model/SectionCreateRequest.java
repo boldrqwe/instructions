@@ -1,25 +1,28 @@
-package com.example.instructions.api;
+package com.example.instructions.api.model;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 /**
- * DTO секции статьи.
+ * Запрос на создание секции.
  */
-public class SectionDto {
+public class SectionCreateRequest {
 
-    private UUID id;
+    @NotNull
     private UUID chapterId;
+
+    @NotBlank
+    @Size(max = 512)
     private String title;
+
+    @Min(0)
     private int orderIndex;
+
+    @NotBlank
     private String markdown;
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getChapterId() {
         return chapterId;

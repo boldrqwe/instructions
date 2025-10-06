@@ -1,4 +1,4 @@
-package com.example.instructions.api;
+package com.example.instructions.api.model;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

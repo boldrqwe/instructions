@@ -1,5 +1,8 @@
-package com.example.instructions.api;
+package com.example.instructions.api.controller;
 
+import com.example.instructions.api.dto.ArticleDto;
+import com.example.instructions.api.dto.ArticleSummaryDto;
+import com.example.instructions.api.dto.TocDto;
 import com.example.instructions.common.PageResponse;
 import com.example.instructions.domain.ArticleStatus;
 import com.example.instructions.service.ArticleService;

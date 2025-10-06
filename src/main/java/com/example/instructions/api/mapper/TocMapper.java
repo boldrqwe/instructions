@@ -1,5 +1,8 @@
-package com.example.instructions.api;
+package com.example.instructions.api.mapper;
 
+import com.example.instructions.api.dto.TocChapterDto;
+import com.example.instructions.api.dto.TocDto;
+import com.example.instructions.api.dto.TocSectionDto;
 import com.example.instructions.domain.Chapter;
 import com.example.instructions.domain.Section;
 import java.util.List;

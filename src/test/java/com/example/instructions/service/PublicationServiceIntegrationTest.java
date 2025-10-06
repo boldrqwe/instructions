@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.instructions.AbstractIntegrationTest;
-import com.example.instructions.api.ArticleDto;
-import com.example.instructions.api.SearchResultDto;
+import com.example.instructions.api.dto.ArticleDto;
+import com.example.instructions.api.dto.SearchResultDto;
 import com.example.instructions.common.ConflictException;
 import com.example.instructions.common.NotFoundException;
 import com.example.instructions.common.PageResponse;

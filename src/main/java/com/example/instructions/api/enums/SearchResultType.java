@@ -1,4 +1,4 @@
-package com.example.instructions.api;
+package com.example.instructions.api.enums;
 
 /**
  * Тип результата поиска.

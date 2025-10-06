@@ -1,19 +1,17 @@
-package com.example.instructions.api;
+package com.example.instructions.api.dto;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 /**
- * DTO главы.
+ * DTO секции статьи.
  */
-public class ChapterDto {
+public class SectionDto {
 
     private UUID id;
-    private UUID articleId;
+    private UUID chapterId;
     private String title;
     private int orderIndex;
-    private List<SectionDto> sections = new ArrayList<>();
+    private String markdown;
 
     public UUID getId() {
         return id;
@@ -23,12 +21,12 @@ public class ChapterDto {
         this.id = id;
     }
 
-    public UUID getArticleId() {
-        return articleId;
+    public UUID getChapterId() {
+        return chapterId;
     }
 
-    public void setArticleId(UUID articleId) {
-        this.articleId = articleId;
+    public void setChapterId(UUID chapterId) {
+        this.chapterId = chapterId;
     }
 
     public String getTitle() {
@@ -47,11 +45,11 @@ public class ChapterDto {
         this.orderIndex = orderIndex;
     }
 
-    public List<SectionDto> getSections() {
-        return sections;
+    public String getMarkdown() {
+        return markdown;
     }
 
-    public void setSections(List<SectionDto> sections) {
-        this.sections = sections;
+    public void setMarkdown(String markdown) {
+        this.markdown = markdown;
     }
 }

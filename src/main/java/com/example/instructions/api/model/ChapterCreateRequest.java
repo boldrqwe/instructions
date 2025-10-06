@@ -1,4 +1,4 @@
-package com.example.instructions.api;
+package com.example.instructions.api.model;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -7,12 +7,12 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 /**
- * Запрос на создание секции.
+ * Запрос на создание главы.
  */
-public class SectionCreateRequest {
+public class ChapterCreateRequest {
 
     @NotNull
-    private UUID chapterId;
+    private UUID articleId;
 
     @NotBlank
     @Size(max = 512)
@@ -21,15 +21,12 @@ public class SectionCreateRequest {
     @Min(0)
     private int orderIndex;
 
-    @NotBlank
-    private String markdown;
-
-    public UUID getChapterId() {
-        return chapterId;
+    public UUID getArticleId() {
+        return articleId;
     }
 
-    public void setChapterId(UUID chapterId) {
-        this.chapterId = chapterId;
+    public void setArticleId(UUID articleId) {
+        this.articleId = articleId;
     }
 
     public String getTitle() {
@@ -46,13 +43,5 @@ public class SectionCreateRequest {
 
     public void setOrderIndex(int orderIndex) {
         this.orderIndex = orderIndex;
-    }
-
-    public String getMarkdown() {
-        return markdown;
-    }
-
-    public void setMarkdown(String markdown) {
-        this.markdown = markdown;
     }
 }

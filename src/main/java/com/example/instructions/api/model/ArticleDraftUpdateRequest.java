@@ -1,4 +1,4 @@
-package com.example.instructions.api;
+package com.example.instructions.api.model;
 
 import jakarta.validation.constraints.Size;
 import java.util.ArrayList;

@@ -1,5 +1,12 @@
-package com.example.instructions.api;
+package com.example.instructions.api.controller;
 
+import com.example.instructions.api.model.ArticleDraftCreateRequest;
+import com.example.instructions.api.model.ArticleDraftUpdateRequest;
+import com.example.instructions.api.model.ChapterCreateRequest;
+import com.example.instructions.api.model.SectionCreateRequest;
+import com.example.instructions.api.dto.ArticleDto;
+import com.example.instructions.api.dto.ChapterDto;
+import com.example.instructions.api.dto.SectionDto;
 import com.example.instructions.service.ArticleService;
 import com.example.instructions.service.PublicationService;
 import jakarta.validation.Valid;

@@ -1,16 +1,16 @@
 package com.example.instructions.service;
 
-import com.example.instructions.api.ArticleDraftCreateRequest;
-import com.example.instructions.api.ArticleDraftUpdateRequest;
-import com.example.instructions.api.ArticleDto;
-import com.example.instructions.api.ArticleMapper;
-import com.example.instructions.api.ArticleSummaryDto;
-import com.example.instructions.api.ChapterCreateRequest;
-import com.example.instructions.api.ChapterDto;
-import com.example.instructions.api.SectionCreateRequest;
-import com.example.instructions.api.SectionDto;
-import com.example.instructions.api.TocDto;
-import com.example.instructions.api.TocMapper;
+import com.example.instructions.api.model.ArticleDraftCreateRequest;
+import com.example.instructions.api.model.ArticleDraftUpdateRequest;
+import com.example.instructions.api.dto.ArticleDto;
+import com.example.instructions.api.mapper.ArticleMapper;
+import com.example.instructions.api.dto.ArticleSummaryDto;
+import com.example.instructions.api.model.ChapterCreateRequest;
+import com.example.instructions.api.dto.ChapterDto;
+import com.example.instructions.api.model.SectionCreateRequest;
+import com.example.instructions.api.dto.SectionDto;
+import com.example.instructions.api.dto.TocDto;
+import com.example.instructions.api.mapper.TocMapper;
 import com.example.instructions.common.BadRequestException;
 import com.example.instructions.common.ConflictException;
 import com.example.instructions.common.NotFoundException;

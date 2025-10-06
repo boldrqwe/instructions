@@ -1,5 +1,6 @@
-package com.example.instructions.api;
+package com.example.instructions.api.mapper;
 
+import com.example.instructions.api.dto.*;
 import com.example.instructions.domain.Article;
 import com.example.instructions.domain.Chapter;
 import com.example.instructions.domain.Section;

@@ -17,9 +17,16 @@ spring:
     clean-disabled: false
     validate-on-migrate: false
     locations: classpath:db/migration
+
 logging:
   level:
     root: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web.filter.CorsFilter: DEBUG
+
+
+
+
 
 app:
   admin:
@@ -28,6 +35,10 @@ app:
   jwt:
     secret: ${APP_JWT_SECRET:change-me-please-change-me-please}
     issuer: ${APP_JWT_ISSUER:instructions-api}
-    access-token-ttl: ${APP_JWT_ACCESS_TOKEN_TTL:PT1H}
+    access-token-ttl: ${APP_JWT_ACCESS_TOKEN_TTL:PT5H}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+    allowed-origins: >
+      ${CORS_ALLOWED_ORIGINS:http://localhost:5173},
+      http://localhost:5174,
+      https://site.79.174.84.176.sslip.io,
+      https://test.79.174.84.176.sslip.io
