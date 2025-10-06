@@ -128,7 +128,7 @@ public class ArticleService {
         article.setSlug(validateSlug(slug));
         article.setStatus(ArticleStatus.DRAFT);
         article.setCreatedBy(authenticationFacade.getCurrentUserId());
-        article.setTags(resolveTags(request.getTags()));
+        article.setTagEntities(resolveTags(request.getTags()));
         Article saved = articleRepository.save(article);
         return articleMapper.toDto(saved);
     }
@@ -156,7 +156,7 @@ public class ArticleService {
             article.setSlug(slug);
         }
         if (request.getTags() != null) {
-            article.setTags(resolveTags(request.getTags()));
+            article.setTagEntities(resolveTags(request.getTags()));
         }
         Article saved = articleRepository.save(article);
         return articleMapper.toDto(saved);

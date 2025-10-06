@@ -1,5 +1,7 @@
 package com.example.instructions.domain;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,12 +13,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
-import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -43,6 +44,22 @@ public class Article {
 
     @Column(name = "slug", nullable = false, length = 512)
     private String slug;
+
+    @Column(name = "summary")
+    private String summary;
+
+    @Column(name = "cover_image_url")
+    private String coverImageUrl;
+
+    @Column(name = "tags", columnDefinition = "text[]")
+    private String[] tags;
+
+    @Column(name = "content_html", columnDefinition = "TEXT", nullable = false)
+    private String contentHtml = "";
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "content_json", columnDefinition = "jsonb", nullable = false)
+    private JsonNode contentJson = JsonNodeFactory.instance.objectNode();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
@@ -71,7 +88,7 @@ public class Article {
     @JoinTable(name = "article_tag",
             joinColumns = @JoinColumn(name = "article_id"),
             inverseJoinColumns = @JoinColumn(name = "tag_id"))
-    private Set<Tag> tags = new LinkedHashSet<>();
+    private Set<Tag> tagEntities = new LinkedHashSet<>();
 
     public UUID getId() {
         return id;
@@ -153,12 +170,52 @@ public class Article {
         this.chapters = chapters;
     }
 
-    public Set<Tag> getTags() {
+    public Set<Tag> getTagEntities() {
+        return tagEntities;
+    }
+
+    public void setTagEntities(Set<Tag> tagEntities) {
+        this.tagEntities = tagEntities;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public void setSummary(String summary) {
+        this.summary = summary;
+    }
+
+    public String getCoverImageUrl() {
+        return coverImageUrl;
+    }
+
+    public void setCoverImageUrl(String coverImageUrl) {
+        this.coverImageUrl = coverImageUrl;
+    }
+
+    public String[] getTags() {
         return tags;
     }
 
-    public void setTags(Set<Tag> tags) {
+    public void setTags(String[] tags) {
         this.tags = tags;
+    }
+
+    public String getContentHtml() {
+        return contentHtml;
+    }
+
+    public void setContentHtml(String contentHtml) {
+        this.contentHtml = contentHtml;
+    }
+
+    public JsonNode getContentJson() {
+        return contentJson;
+    }
+
+    public void setContentJson(JsonNode contentJson) {
+        this.contentJson = contentJson;
     }
 
     /**
@@ -186,10 +243,22 @@ public class Article {
         OffsetDateTime now = OffsetDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (this.contentHtml == null) {
+            this.contentHtml = "";
+        }
+        if (this.contentJson == null) {
+            this.contentJson = JsonNodeFactory.instance.objectNode();
+        }
     }
 
     @PreUpdate
     void onUpdate() {
         this.updatedAt = OffsetDateTime.now();
+        if (this.contentHtml == null) {
+            this.contentHtml = "";
+        }
+        if (this.contentJson == null) {
+            this.contentJson = JsonNodeFactory.instance.objectNode();
+        }
     }
 }

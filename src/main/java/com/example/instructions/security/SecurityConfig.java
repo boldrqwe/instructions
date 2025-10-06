@@ -49,8 +49,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(registry -> registry
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/articles", "/api/v1/articles/*", "/api/v1/search").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/articles/*/toc").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/uploads/images").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/articles/by-slug/**", "/api/v1/search").permitAll()
                         .anyRequest().hasRole("ADMIN")
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

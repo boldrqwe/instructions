@@ -10,6 +10,7 @@ import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Глобальный обработчик исключений, конвертирующий их в JSON-ответы.
@@ -58,6 +59,22 @@ public class GlobalExceptionHandler {
         }
         String message = String.join("; ", messages);
         return buildResponse(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, message);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse> handleResponseStatus(ResponseStatusException ex) {
+        HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+        if (status == null) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        ErrorCode code = switch (status) {
+            case PAYLOAD_TOO_LARGE -> ErrorCode.PAYLOAD_TOO_LARGE;
+            case NOT_FOUND -> ErrorCode.NOT_FOUND;
+            case FORBIDDEN -> ErrorCode.FORBIDDEN;
+            default -> ErrorCode.BAD_REQUEST;
+        };
+        String message = ex.getReason() != null ? ex.getReason() : status.getReasonPhrase();
+        return buildResponse(status, code, message);
     }
 
     @ExceptionHandler(Exception.class)

@@ -18,10 +18,10 @@ import org.mapstruct.ReportingPolicy;
 public interface ArticleMapper {
 
     @Mapping(target = "chapters", source = "chapters")
-    @Mapping(target = "tags", source = "tags")
+    @Mapping(target = "tags", source = "tagEntities")
     ArticleDto toDto(Article article);
 
-    @Mapping(target = "tags", source = "tags")
+    @Mapping(target = "tags", source = "tagEntities")
     ArticleSummaryDto toSummary(Article article);
 
     List<ArticleSummaryDto> toSummaryList(List<Article> articles);
