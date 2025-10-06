@@ -60,7 +60,7 @@ public class Article {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    @Column(name = "search_vector", columnDefinition = "tsvector")
+    @Column(name = "search_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
     private String searchVector;
 
     @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)

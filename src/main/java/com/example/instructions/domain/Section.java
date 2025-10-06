@@ -38,7 +38,7 @@ public class Section {
     @Column(name = "markdown", nullable = false, columnDefinition = "text")
     private String markdown;
 
-    @Column(name = "search_vector", columnDefinition = "tsvector")
+    @Column(name = "search_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
     private String searchVector;
 
     public UUID getId() {
