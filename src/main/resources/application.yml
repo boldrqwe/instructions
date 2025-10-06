@@ -17,6 +17,9 @@ spring:
     clean-disabled: false
     validate-on-migrate: false
     locations: classpath:db/migration
+  web:
+    resources:
+      static-locations: file:./uploads/
 
 logging:
   level:
