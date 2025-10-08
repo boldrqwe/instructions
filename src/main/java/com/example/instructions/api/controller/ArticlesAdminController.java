@@ -9,7 +9,9 @@ import com.example.instructions.service.ArticleEditorService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
+
 import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -29,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/articles")
 @Validated
-@PreAuthorize("hasRole('ADMIN')")
+
 public class ArticlesAdminController {
 
     private final ArticleEditorService service;
@@ -38,27 +40,32 @@ public class ArticlesAdminController {
         this.service = service;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ArticleResponseDto create(@Valid @RequestBody ArticleCreateDto dto) {
         return service.create(dto);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ArticleResponseDto update(@PathVariable UUID id, @Valid @RequestBody ArticleUpdateDto dto) {
         return service.update(id, dto);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/publish")
     public ArticleResponseDto publish(@PathVariable UUID id) {
         return service.publish(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/unpublish")
     public ArticleResponseDto unpublish(@PathVariable UUID id) {
         return service.unpublish(id);
     }
 
+    @PreAuthorize("permitAll()")
     @GetMapping
     public PageResponse<ArticleResponseDto> list(@RequestParam(required = false) ArticleStatus status,
                                                  @RequestParam(required = false) String query,
@@ -67,6 +74,7 @@ public class ArticlesAdminController {
         return service.list(status, query, page, size);
     }
 
+    @PreAuthorize("permitAll()")
     @GetMapping("/{id}")
     public ArticleResponseDto get(@PathVariable UUID id) {
         return service.get(id);

@@ -47,18 +47,31 @@ public class SecurityConfig {
 
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(registry -> registry
+                        // Swagger и общие эндпоинты
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
+
+                        // OPTIONS для CORS
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+
+                        // Загрузка картинок разрешена GET
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/uploads/images").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/articles/by-slug/**", "/api/v1/search").permitAll()
-                        .anyRequest().hasRole("ADMIN")
+
+                        // Получение статей и поиск — доступно всем
+                        .requestMatchers(HttpMethod.GET, "/api/v1/articles/**", "/api/v1/search").permitAll()
+
+                        // Создание статей — только админ
+                        .requestMatchers(HttpMethod.POST, "/api/v1/articles/**").hasRole("ADMIN")
+
+                        // Остальные запросы — разрешены всем
+                        .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.decoder(jwtDecoder).jwtAuthenticationConverter(converter)))
                 .httpBasic(Customizer.withDefaults());
+
         return http.build();
     }
+
 
     @Bean
     public JwtDecoder jwtDecoder(JwtProperties jwtProperties) {

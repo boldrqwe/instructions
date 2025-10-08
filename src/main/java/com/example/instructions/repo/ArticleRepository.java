@@ -39,13 +39,20 @@ public interface ArticleRepository extends JpaRepository<Article, UUID> {
     @Query("select a from Article a where a.id = :id and a.status = :status")
     Optional<Article> findDetailedByIdAndStatus(UUID id, ArticleStatus status);
 
-    @EntityGraph(attributePaths = {"tagEntities"})
-    @Query("""
-            select a from Article a
-            where (:status is null or a.status = :status)
-              and (:query is null or trim(:query) = '' or a.searchVector @@ function('plainto_tsquery', 'simple', :query))
-            order by a.updatedAt desc
-            """)
+    @Query(
+            value = """
+       SELECT * FROM article a
+       WHERE (:status IS NULL OR a.status = CAST(:status AS VARCHAR))
+         AND (:query IS NULL OR trim(:query) = '' OR a.search_vector @@ plainto_tsquery('simple', :query))
+       ORDER BY a.updated_at DESC
+       """,
+            countQuery = """
+       SELECT count(*) FROM article a
+       WHERE (:status IS NULL OR a.status = CAST(:status AS VARCHAR))
+         AND (:query IS NULL OR trim(:query) = '' OR a.search_vector @@ plainto_tsquery('simple', :query))
+       """,
+            nativeQuery = true
+    )
     Page<Article> search(@Param("status") ArticleStatus status,
                          @Param("query") String query,
                          Pageable pageable);
