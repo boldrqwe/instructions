@@ -1,5 +1,7 @@
 package com.example.instructions.domain;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,18 +13,15 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
-import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+
+import lombok.Data;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -31,6 +30,7 @@ import org.hibernate.type.SqlTypes;
  */
 @Entity
 @Table(name = "article")
+@Data
 public class Article {
 
     @Id
@@ -43,6 +43,22 @@ public class Article {
 
     @Column(name = "slug", nullable = false, length = 512)
     private String slug;
+
+    @Column(name = "summary")
+    private String summary;
+
+    @Column(name = "cover_image_url")
+    private String coverImageUrl;
+
+    @Column(name = "tags", columnDefinition = "text[]")
+    private String[] tags;
+
+    @Column(name = "content_html", columnDefinition = "TEXT", nullable = false)
+    private String contentHtml = "";
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "content_json", columnDefinition = "jsonb", nullable = false)
+    private JsonNode contentJson = JsonNodeFactory.instance.objectNode();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
@@ -65,101 +81,14 @@ public class Article {
 
     @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
     @jakarta.persistence.OrderBy("orderIndex ASC")
-    private List<Chapter> chapters = new ArrayList<>();
+    private Set<Chapter> chapters = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "article_tag",
             joinColumns = @JoinColumn(name = "article_id"),
             inverseJoinColumns = @JoinColumn(name = "tag_id"))
-    private Set<Tag> tags = new LinkedHashSet<>();
+    private Set<Tag> tagEntities = new LinkedHashSet<>();
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getSlug() {
-        return slug;
-    }
-
-    public void setSlug(String slug) {
-        this.slug = slug;
-    }
-
-    public ArticleStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ArticleStatus status) {
-        this.status = status;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public OffsetDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public String getSearchVector() {
-        return searchVector;
-    }
-
-    public void setSearchVector(String searchVector) {
-        this.searchVector = searchVector;
-    }
-
-    public List<Chapter> getChapters() {
-        return chapters;
-    }
-
-    public void setChapters(List<Chapter> chapters) {
-        this.chapters = chapters;
-    }
-
-    public Set<Tag> getTags() {
-        return tags;
-    }
-
-    public void setTags(Set<Tag> tags) {
-        this.tags = tags;
-    }
 
     /**
      * Добавляет главу в статью, автоматически устанавливая обратную ссылку.
@@ -186,10 +115,22 @@ public class Article {
         OffsetDateTime now = OffsetDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (this.contentHtml == null) {
+            this.contentHtml = "";
+        }
+        if (this.contentJson == null) {
+            this.contentJson = JsonNodeFactory.instance.objectNode();
+        }
     }
 
     @PreUpdate
     void onUpdate() {
         this.updatedAt = OffsetDateTime.now();
+        if (this.contentHtml == null) {
+            this.contentHtml = "";
+        }
+        if (this.contentJson == null) {
+            this.contentJson = JsonNodeFactory.instance.objectNode();
+        }
     }
 }

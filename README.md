@@ -39,3 +39,11 @@
 - `./mvnw -DskipTests package` — сборка jar без тестов.
 
 Любые изменения контракта API делаются **только** через ADR и правку `/docs/api/openapi.yaml`.
+
+## Article API & Uploads
+
+- **Админ-эндпоинты (`/api/v1/articles`)**: CRUD черновиков, публикация/снятие с публикации, фильтрация по статусу и полнотекстовому запросу (`status`, `query`, `page`, `size`). Все операции требуют роли `ADMIN`.
+- **Публичный просмотр**: `GET /api/v1/articles/by-slug/{slug}` возвращает только опубликованные статьи с полями summary, контентом в HTML/JSON и тегами.
+- **Загрузка изображений**: `POST /api/v1/uploads/images` принимает PNG/JPEG/WebP/GIF размером до 10 МБ, сохраняет в `./uploads/images/YYYY/MM/DD/{UUID}.{ext}` и возвращает URL вида `/uploads/...`.
+- **Статика**: файлы из каталога `./uploads` автоматически раздаются по `/uploads/**`.
+- **Dev CORS**: при профиле `dev` разрешён origin `http://localhost:5173` для `/api/**` и `/uploads/**`.
