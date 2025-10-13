@@ -7,29 +7,30 @@ import com.example.instructions.api.article.mapper.ArticleEditorMapper;
 import com.example.instructions.common.BadRequestException;
 import com.example.instructions.common.NotFoundException;
 import com.example.instructions.common.PageResponse;
-import com.example.instructions.common.SlugGenerator;
 import com.example.instructions.domain.Article;
 import com.example.instructions.domain.ArticleStatus;
 import com.example.instructions.repo.ArticleRepository;
 import com.example.instructions.security.AuthenticationFacade;
+import com.example.instructions.utils.SlugResolverService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import jakarta.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 /**
  * Прикладной сервис для Article API редактора.
  */
 @Service
+@RequiredArgsConstructor
 public class ArticleEditorService {
 
     private static final int MAX_CONTENT_HTML = 2_000_000;
@@ -37,28 +38,18 @@ public class ArticleEditorService {
     private final ArticleRepository articleRepository;
     private final ArticleEditorMapper mapper;
     private final AuthenticationFacade authenticationFacade;
+    private final SlugResolverService slugResolverService;
 
-    public ArticleEditorService(ArticleRepository articleRepository,
-                                ArticleEditorMapper mapper,
-                                AuthenticationFacade authenticationFacade) {
-        this.articleRepository = articleRepository;
-        this.mapper = mapper;
-        this.authenticationFacade = authenticationFacade;
-    }
 
     @Transactional
     public ArticleResponseDto create(ArticleCreateDto dto) {
         validateContentHtml(dto.getContentHtml());
-        Article article = new Article();
-        article.setTitle(dto.getTitle());
-        article.setSlug(resolveSlug(dto.getSlug(), dto.getTitle(), null));
-        article.setSummary(dto.getSummary());
-        article.setCoverImageUrl(dto.getCoverImageUrl());
-        article.setTags(toArray(dto.getTags()));
-        article.setContentHtml(defaultContentHtml(dto.getContentHtml()));
-        article.setContentJson(defaultContentJson(dto.getContentJson()));
-        article.setStatus(ArticleStatus.DRAFT);
-        article.setCreatedBy(authenticationFacade.getCurrentUserId());
+        String slug = slugResolverService.resolveSlug(dto.getSlug(), dto.getTitle(), null);
+        String currentUserId = authenticationFacade.getCurrentUserId();
+        String contentHtml = defaultContentHtml(dto.getContentHtml());
+        JsonNode contentJson = defaultContentJson(dto.getContentJson());
+        String[] array = toArray(dto.getTags());
+        Article article = mapper.toEntity(dto, slug, currentUserId, array, contentHtml, contentJson);
         Article saved = articleRepository.save(article);
         return mapper.toDto(saved);
     }
@@ -68,32 +59,12 @@ public class ArticleEditorService {
         validateContentHtml(dto.getContentHtml());
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Статья не найдена"));
-
-        if (StringUtils.hasText(dto.getTitle())) {
-            article.setTitle(dto.getTitle());
-        }
-        if (dto.getSlug() != null) {
-            article.setSlug(resolveSlug(dto.getSlug(), article.getTitle(), article.getId()));
-        }
-        if (dto.getSummary() != null) {
-            article.setSummary(dto.getSummary());
-        }
-        if (dto.getCoverImageUrl() != null) {
-            article.setCoverImageUrl(dto.getCoverImageUrl());
-        }
-        if (dto.getTags() != null) {
-            article.setTags(toArray(dto.getTags()));
-        }
-        if (dto.getContentHtml() != null) {
-            article.setContentHtml(defaultContentHtml(dto.getContentHtml()));
-        }
-        if (dto.getContentJson() != null) {
-            article.setContentJson(defaultContentJson(dto.getContentJson()));
-        }
-        if (dto.getStatus() != null) {
-            article.setStatus(dto.getStatus());
-        }
-        Article saved = articleRepository.save(article);
+        String slug = slugResolverService.resolveSlug(dto.getSlug(), article.getTitle(), article.getId());
+        String contentHtml = defaultContentHtml(dto.getContentHtml());
+        String[] array = toArray(dto.getTags());
+        JsonNode contentJson = defaultContentJson(dto.getContentJson());
+        Article toSave = mapper.updateEntity(article, dto, slug, array, contentHtml, contentJson);
+        Article saved = articleRepository.save(toSave);
         return mapper.toDto(saved);
     }
 
@@ -102,7 +73,7 @@ public class ArticleEditorService {
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Статья не найдена"));
         article.setStatus(ArticleStatus.PUBLISHED);
-        article.setSlug(resolveSlug(article.getSlug(), article.getTitle(), article.getId()));
+        article.setSlug(slugResolverService.resolveSlug(article.getSlug(), article.getTitle(), article.getId()));
         Article saved = articleRepository.save(article);
         return mapper.toDto(saved);
     }
@@ -135,28 +106,6 @@ public class ArticleEditorService {
         return mapper.toDto(article);
     }
 
-    private String resolveSlug(String providedSlug, String title, UUID currentId) {
-        String baseSlug;
-        if (StringUtils.hasText(providedSlug)) {
-            baseSlug = providedSlug.trim().toLowerCase(Locale.ROOT);
-        } else if (StringUtils.hasText(title)) {
-            baseSlug = SlugGenerator.fromText(title);
-        } else {
-            throw new BadRequestException("Slug or title must be provided");
-        }
-        if (!baseSlug.matches("^[a-z0-9-]+$")) {
-            throw new BadRequestException("Недопустимый slug");
-        }
-        String candidate = baseSlug;
-        int counter = 2;
-        while (true) {
-            Optional<Article> existing = articleRepository.findBySlug(candidate);
-            if (existing.isEmpty() || (currentId != null && existing.get().getId().equals(currentId))) {
-                return candidate;
-            }
-            candidate = baseSlug + "-" + counter++;
-        }
-    }
 
     private String[] toArray(List<String> tags) {
         if (tags == null) {

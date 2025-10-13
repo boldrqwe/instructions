@@ -5,27 +5,26 @@ import com.example.instructions.api.enums.SearchResultType;
 import com.example.instructions.common.PageResponse;
 import com.example.instructions.search.SearchRepository;
 import com.example.instructions.search.SearchResultProjection;
-import java.util.List;
-import java.util.Locale;
-import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Pattern;
+
 /**
  * Сервис полнотекстового поиска по опубликованному контенту.
  */
 @Service
+@RequiredArgsConstructor
 public class SearchService {
 
     private static final Pattern MARKDOWN_PATTERN = Pattern.compile("[#*_`>\\[\\]]");
 
     private final SearchRepository searchRepository;
-
-    public SearchService(SearchRepository searchRepository) {
-        this.searchRepository = searchRepository;
-    }
 
     /**
      * Выполняет поиск среди опубликованных статей и секций.

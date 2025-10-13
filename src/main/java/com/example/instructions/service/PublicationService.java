@@ -12,16 +12,19 @@ import com.example.instructions.repo.RevisionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
-import java.util.Optional;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Сервис публикации статей с созданием ревизий.
  */
 @Service
+@RequiredArgsConstructor
 public class PublicationService {
 
     private static final Logger log = LoggerFactory.getLogger(PublicationService.class);
@@ -31,15 +34,7 @@ public class PublicationService {
     private final ArticleMapper articleMapper;
     private final ObjectMapper objectMapper;
 
-    public PublicationService(ArticleRepository articleRepository,
-                              RevisionRepository revisionRepository,
-                              ArticleMapper articleMapper,
-                              ObjectMapper objectMapper) {
-        this.articleRepository = articleRepository;
-        this.revisionRepository = revisionRepository;
-        this.articleMapper = articleMapper;
-        this.objectMapper = objectMapper;
-    }
+
 
     /**
      * Публикует черновик статьи и создаёт ревизию.
@@ -61,7 +56,7 @@ public class PublicationService {
         article.getChapters().forEach(chapter -> chapter.getSections().size());
         article.setVersion(article.getVersion() + 1);
         article.setStatus(ArticleStatus.PUBLISHED);
-        ArticleDto snapshot = articleMapper.toDto(article);
+        ArticleDto snapshot = articleMapper.toPublicDto(article);
         String snapshotJson = toJson(snapshot);
         Revision revision = new Revision();
         revision.setArticle(article);
@@ -70,7 +65,7 @@ public class PublicationService {
         revisionRepository.save(revision);
         Article saved = articleRepository.save(article);
         log.info("[Publication] articleId={} version={}", saved.getId(), saved.getVersion());
-        return articleMapper.toDto(saved);
+        return articleMapper.toPublicDto(saved);
     }
 
     private String toJson(Object value) {

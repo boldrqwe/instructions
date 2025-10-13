@@ -1,46 +1,36 @@
 package com.example.instructions.service;
 
+import com.example.instructions.api.dto.*;
+import com.example.instructions.api.mapper.ArticleMapper;
+import com.example.instructions.api.mapper.ChapterMapper;
+import com.example.instructions.api.mapper.SectionMapper;
+import com.example.instructions.api.mapper.TocMapper;
 import com.example.instructions.api.model.ArticleDraftCreateRequest;
 import com.example.instructions.api.model.ArticleDraftUpdateRequest;
-import com.example.instructions.api.dto.ArticleDto;
-import com.example.instructions.api.mapper.ArticleMapper;
-import com.example.instructions.api.dto.ArticleSummaryDto;
 import com.example.instructions.api.model.ChapterCreateRequest;
-import com.example.instructions.api.dto.ChapterDto;
 import com.example.instructions.api.model.SectionCreateRequest;
-import com.example.instructions.api.dto.SectionDto;
-import com.example.instructions.api.dto.TocDto;
-import com.example.instructions.api.mapper.TocMapper;
-import com.example.instructions.common.BadRequestException;
-import com.example.instructions.common.ConflictException;
-import com.example.instructions.common.NotFoundException;
-import com.example.instructions.common.PageResponse;
-import com.example.instructions.common.SlugGenerator;
-import com.example.instructions.domain.Article;
-import com.example.instructions.domain.ArticleStatus;
-import com.example.instructions.domain.Chapter;
-import com.example.instructions.domain.Section;
-import com.example.instructions.domain.Tag;
+import com.example.instructions.common.*;
+import com.example.instructions.domain.*;
 import com.example.instructions.repo.ArticleRepository;
 import com.example.instructions.repo.ChapterRepository;
 import com.example.instructions.repo.SectionRepository;
 import com.example.instructions.repo.TagRepository;
 import com.example.instructions.security.AuthenticationFacade;
 import jakarta.transaction.Transactional;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.*;
+
 /**
  * Прикладной сервис для работы со статьями и их оглавлением.
  */
 @Service
+@RequiredArgsConstructor
 public class ArticleService {
 
     private final ArticleRepository articleRepository;
@@ -50,22 +40,9 @@ public class ArticleService {
     private final ArticleMapper articleMapper;
     private final TocMapper tocMapper;
     private final AuthenticationFacade authenticationFacade;
+    private final ChapterMapper chapterMapper;
+    private final SectionMapper sectionMapper;
 
-    public ArticleService(ArticleRepository articleRepository,
-                          ChapterRepository chapterRepository,
-                          SectionRepository sectionRepository,
-                          TagRepository tagRepository,
-                          ArticleMapper articleMapper,
-                          TocMapper tocMapper,
-                          AuthenticationFacade authenticationFacade) {
-        this.articleRepository = articleRepository;
-        this.chapterRepository = chapterRepository;
-        this.sectionRepository = sectionRepository;
-        this.tagRepository = tagRepository;
-        this.articleMapper = articleMapper;
-        this.tocMapper = tocMapper;
-        this.authenticationFacade = authenticationFacade;
-    }
 
     /**
      * Возвращает страницу статей по статусу и текстовому фильтру.
@@ -99,7 +76,7 @@ public class ArticleService {
         Article article = articleRepository.findBySlugAndStatus(slug, ArticleStatus.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Статья не найдена или не опубликована"));
         article.getChapters().forEach(chapter -> chapter.getSections().size());
-        return articleMapper.toDto(article);
+        return articleMapper.toPublicDto(article);
     }
 
     /**
@@ -111,7 +88,8 @@ public class ArticleService {
     public TocDto getPublishedToc(UUID articleId) {
         Article article = articleRepository.findDetailedByIdAndStatus(articleId, ArticleStatus.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Оглавление доступно только для опубликованных статей"));
-        return tocMapper.toTocDto(article.getId(), article.getChapters());
+        TocDto tocDto = tocMapper.toTocDto(article.getId(), article.getChapters());
+        return tocDto;
     }
 
     /**
@@ -124,13 +102,14 @@ public class ArticleService {
     public ArticleDto createDraft(ArticleDraftCreateRequest request) {
         Article article = new Article();
         article.setTitle(request.getTitle());
-        String slug = StringUtils.hasText(request.getSlug()) ? request.getSlug() : SlugGenerator.fromText(request.getTitle());
-        article.setSlug(validateSlug(slug));
-        article.setStatus(ArticleStatus.DRAFT);
-        article.setCreatedBy(authenticationFacade.getCurrentUserId());
-        article.setTagEntities(resolveTags(request.getTags()));
-        Article saved = articleRepository.save(article);
-        return articleMapper.toDto(saved);
+        String currentUserId = authenticationFacade.getCurrentUserId();
+        String slug = StringUtils.hasText(request.getSlug()) ? request.getSlug()
+                : SlugGenerator.fromText(request.getTitle());
+        String validateSlug = validateSlug(slug);
+        Set<Tag> tagEntities = resolveTags(request.getTags());
+        Article toSave = articleMapper.toEntity(validateSlug, ArticleStatus.DRAFT, currentUserId, tagEntities);
+        Article saved = articleRepository.save(toSave);
+        return articleMapper.toPublicDto(saved);
     }
 
     /**
@@ -159,7 +138,7 @@ public class ArticleService {
             article.setTagEntities(resolveTags(request.getTags()));
         }
         Article saved = articleRepository.save(article);
-        return articleMapper.toDto(saved);
+        return articleMapper.toPublicDto(saved);
     }
 
     /**
@@ -174,11 +153,8 @@ public class ArticleService {
         if (article.getStatus() != ArticleStatus.DRAFT) {
             throw new ConflictException("Главы можно изменять только в черновике");
         }
-        Chapter chapter = new Chapter();
-        chapter.setArticle(article);
-        chapter.setOrderIndex(request.getOrderIndex());
-        chapter.setTitle(request.getTitle());
-        Chapter saved = chapterRepository.save(chapter);
+        Chapter toSave = chapterMapper.toEntity(request, article);
+        Chapter saved = chapterRepository.save(toSave);
         return articleMapper.toChapterDto(saved);
     }
 
@@ -195,12 +171,8 @@ public class ArticleService {
         if (chapter.getArticle().getStatus() != ArticleStatus.DRAFT) {
             throw new ConflictException("Секции можно изменять только в черновике");
         }
-        Section section = new Section();
-        section.setChapter(chapter);
-        section.setOrderIndex(request.getOrderIndex());
-        section.setTitle(request.getTitle());
-        section.setMarkdown(request.getMarkdown());
-        Section saved = sectionRepository.save(section);
+        Section toSave = sectionMapper.toEntity(request, chapter);
+        Section saved = sectionRepository.save(toSave);
         return articleMapper.toSectionDto(saved);
     }
 
@@ -209,8 +181,8 @@ public class ArticleService {
                 .orElseThrow(() -> new NotFoundException("Статья не найдена"));
     }
 
-    private java.util.Set<Tag> resolveTags(List<String> tagNames) {
-        java.util.Set<Tag> tags = new java.util.LinkedHashSet<>();
+    private Set<Tag> resolveTags(List<String> tagNames) {
+        Set<Tag> tags = new LinkedHashSet<>();
         if (tagNames == null) {
             return tags;
         }

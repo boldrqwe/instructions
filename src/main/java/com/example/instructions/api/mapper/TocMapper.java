@@ -5,12 +5,12 @@ import com.example.instructions.api.dto.TocDto;
 import com.example.instructions.api.dto.TocSectionDto;
 import com.example.instructions.domain.Chapter;
 import com.example.instructions.domain.Section;
-import java.util.List;
-import java.util.Set;
-
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * Маппер для построения оглавления.
@@ -19,7 +19,7 @@ import org.mapstruct.ReportingPolicy;
 public interface TocMapper {
 
     @Mapping(target = "items", source = "chapters")
-    @Mapping(target = "articleId", expression = "java(articleId)")
+    @Mapping(target = "articleId", source = "articleId")
     TocDto toTocDto(java.util.UUID articleId, Set<Chapter> chapters);
 
     @Mapping(target = "chapterId", source = "id")

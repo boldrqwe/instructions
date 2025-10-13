@@ -4,8 +4,6 @@ import com.example.instructions.domain.ArticleStatus;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -18,11 +16,7 @@ public class ArticleDto {
     private String title;
     private String slug;
     private ArticleStatus status;
-    private int version;
-    private List<ChapterDto> chapters = new ArrayList<>();
-    private List<TagDto> tags = new ArrayList<>();
-    private String createdBy;
-    private OffsetDateTime createdAt;
+    private String description; // <= из summary
+    private String body;        // <= из contentHtml
     private OffsetDateTime updatedAt;
-
 }
