@@ -94,6 +94,13 @@ public class ArticleEditorService {
         return new PageResponse<>(content, result.getNumber(), result.getSize(), result.getTotalElements());
     }
 
+    public PageResponse<ArticleResponseDto> findAll(ArticleStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Article> result = articleRepository.findAllByStatus(status, pageable);
+        List<ArticleResponseDto> content = result.map(mapper::toDto).toList();
+        return new PageResponse<>(content, result.getNumber(), result.getSize(), result.getTotalElements());
+    }
+
     public ArticleResponseDto get(UUID id) {
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Статья не найдена"));
