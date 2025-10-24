@@ -6,8 +6,11 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * MapStruct-маппер для конвертации сущностей статьи в DTO.
@@ -22,13 +25,9 @@ public interface ArticleMapper {
 
     List<TagDto> toTagDtos(Set<Tag> tags);
 
-    List<ChapterDto> toChapterDtos(List<Chapter> chapters);
-
-    @Mapping(target = "sections", source = "sections")
+    @Mapping(target = "sections", expression = "java(mapSections(chapter.getSections()))")
     @Mapping(target = "articleId", source = "article.id")
     ChapterDto toChapterDto(Chapter chapter);
-
-    List<SectionDto> toSectionDtos(List<Section> sections);
 
     @Mapping(target = "chapterId", source = "chapter.id")
     SectionDto toSectionDto(Section section);
@@ -64,5 +63,27 @@ public interface ArticleMapper {
 
     @Mapping(target = "description", source = "summary")
     @Mapping(target = "body", source = "contentHtml")
+    @Mapping(target = "tags", source = "tagEntities")
+    @Mapping(target = "chapters", expression = "java(mapChapters(article.getChapters()))")
     ArticleDto toPublicDto(Article article);
+
+    default List<ChapterDto> mapChapters(Set<Chapter> chapters) {
+        if (chapters == null || chapters.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return chapters.stream()
+                .sorted(Comparator.comparingInt(Chapter::getOrderIndex))
+                .map(this::toChapterDto)
+                .collect(Collectors.toList());
+    }
+
+    default List<SectionDto> mapSections(Set<Section> sections) {
+        if (sections == null || sections.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return sections.stream()
+                .sorted(Comparator.comparingInt(Section::getOrderIndex))
+                .map(this::toSectionDto)
+                .collect(Collectors.toList());
+    }
 }
