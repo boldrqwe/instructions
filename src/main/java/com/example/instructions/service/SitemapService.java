@@ -18,13 +18,17 @@ import java.util.Set;
 public class SitemapService {
 
     private final ArticleRepository articleRepository;
-
     private static final String BASE_URL = "https://devhandbook.ru";
 
     public void generateSitemap() {
         try {
-            File sitemapFile = new File("sitemap.xml");
-            WebSitemapGenerator generator = new WebSitemapGenerator(BASE_URL, sitemapFile.getParentFile());
+            // ✅ Используем текущую рабочую директорию (Spring Boot root)
+            File baseDir = new File(System.getProperty("user.dir"));
+            if (!baseDir.exists()) {
+                baseDir.mkdirs();
+            }
+
+            WebSitemapGenerator generator = new WebSitemapGenerator(BASE_URL, baseDir);
 
             Set<Article> articles = articleRepository.findAllByStatus(ArticleStatus.PUBLISHED);
             for (Article article : articles) {
@@ -41,9 +45,16 @@ public class SitemapService {
             generator.addUrl(BASE_URL + "/");
             generator.addUrl(BASE_URL + "/articles");
 
+            // ✅ Пишем в baseDir/sitemap.xml
             generator.write();
+
+            System.out.println("✅ sitemap.xml успешно сгенерирован: " +
+                    new File(baseDir, "sitemap.xml").getAbsolutePath());
+
         } catch (MalformedURLException e) {
             throw new RuntimeException("Ошибка при генерации sitemap.xml", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Не удалось создать sitemap.xml", e);
         }
     }
 }
