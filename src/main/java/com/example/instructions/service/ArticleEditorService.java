@@ -39,6 +39,7 @@ public class ArticleEditorService {
     private final ArticleEditorMapper mapper;
     private final AuthenticationFacade authenticationFacade;
     private final SlugResolverService slugResolverService;
+    private final SitemapService sitemapService;
 
 
     @Transactional
@@ -75,6 +76,7 @@ public class ArticleEditorService {
         article.setStatus(ArticleStatus.PUBLISHED);
         article.setSlug(slugResolverService.resolveSlug(article.getSlug(), article.getTitle(), article.getId()));
         Article saved = articleRepository.save(article);
+        sitemapService.generateSitemap();
         return mapper.toDto(saved);
     }
 
