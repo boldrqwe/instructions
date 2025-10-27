@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -75,5 +76,7 @@ public interface ArticleRepository extends JpaRepository<Article, UUID> {
     Page<Article> search(@Param("status") ArticleStatus status,
                          @Param("query") String query,
                          Pageable pageable);
+
+    Set<Article> findAllByStatus(ArticleStatus status);
 
 }

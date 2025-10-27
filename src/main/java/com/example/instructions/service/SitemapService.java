@@ -1,0 +1,49 @@
+package com.example.instructions.service;
+
+import com.example.instructions.domain.Article;
+import com.example.instructions.domain.ArticleStatus;
+import com.example.instructions.repo.ArticleRepository;
+import com.redfin.sitemapgenerator.ChangeFreq;
+import com.redfin.sitemapgenerator.WebSitemapGenerator;
+import com.redfin.sitemapgenerator.WebSitemapUrl;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.net.MalformedURLException;
+import java.util.Set;
+
+@Service
+@RequiredArgsConstructor
+public class SitemapService {
+
+    private final ArticleRepository articleRepository;
+
+    private static final String BASE_URL = "https://devhandbook.ru";
+
+    public void generateSitemap() {
+        try {
+            File sitemapFile = new File("sitemap.xml");
+            WebSitemapGenerator generator = new WebSitemapGenerator(BASE_URL, sitemapFile.getParentFile());
+
+            Set<Article> articles = articleRepository.findAllByStatus(ArticleStatus.PUBLISHED);
+            for (Article article : articles) {
+                String url = BASE_URL + "/articles/" + article.getSlug();
+                WebSitemapUrl sitemapUrl = new WebSitemapUrl.Options(url)
+                        .lastMod(java.util.Date.from(article.getUpdatedAt().toInstant()))
+                        .priority(0.8)
+                        .changeFreq(ChangeFreq.WEEKLY)
+                        .build();
+                generator.addUrl(sitemapUrl);
+            }
+
+            // Добавляем главную и общие страницы
+            generator.addUrl(BASE_URL + "/");
+            generator.addUrl(BASE_URL + "/articles");
+
+            generator.write();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Ошибка при генерации sitemap.xml", e);
+        }
+    }
+}
