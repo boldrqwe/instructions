@@ -23,7 +23,7 @@ public class SitemapService {
     public void generateSitemap() {
         try {
             // ✅ Используем текущую рабочую директорию (Spring Boot root)
-            File baseDir = new File(System.getProperty("user.dir"));
+            File baseDir = new File(System.getProperty("java.io.tmpdir"));
             if (!baseDir.exists()) {
                 baseDir.mkdirs();
             }
@@ -45,11 +45,9 @@ public class SitemapService {
             generator.addUrl(BASE_URL + "/");
             generator.addUrl(BASE_URL + "/articles");
 
-            // ✅ Пишем в baseDir/sitemap.xml
             generator.write();
+            System.out.println("✅ sitemap.xml сгенерирован в " + baseDir.getAbsolutePath());
 
-            System.out.println("✅ sitemap.xml успешно сгенерирован: " +
-                    new File(baseDir, "sitemap.xml").getAbsolutePath());
 
         } catch (MalformedURLException e) {
             throw new RuntimeException("Ошибка при генерации sitemap.xml", e);
