@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 
-@RestController
+@RestController("/api/v1/")
 public class SitemapController {
 
     @GetMapping(value = "/sitemap.xml", produces = MediaType.APPLICATION_XML_VALUE)
